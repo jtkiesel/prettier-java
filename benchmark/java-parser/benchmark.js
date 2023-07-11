@@ -2,7 +2,6 @@
 "use strict";
 const path = require("path");
 const klawSync = require("klaw-sync");
-const _ = require("lodash");
 const fs = require("fs");
 const benchmark = require("benchmark");
 const cp = require("child_process");
@@ -26,7 +25,7 @@ const javaSampleFiles = sampleFiles.filter(fileDesc =>
   fileDesc.path.endsWith(".java")
 );
 
-const javaPathAndText = _.map(javaSampleFiles, fileDesc => {
+const javaPathAndText = javaSampleFiles.forEach(fileDesc => {
   const currJavaFileString = fs.readFileSync(fileDesc.path, "utf8");
   const relativePath = path.relative(__dirname, fileDesc.path);
 
@@ -34,7 +33,7 @@ const javaPathAndText = _.map(javaSampleFiles, fileDesc => {
 });
 
 function benchmarkParser(parser) {
-  _.forEach(javaPathAndText, javaText => {
+  javaPathAndText.forEach(javaText => {
     try {
       parser(javaText.text);
     } catch (e) {

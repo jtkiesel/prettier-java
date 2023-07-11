@@ -10,7 +10,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "java-parser": "2.0.4",
-    "lodash": "4.17.21",
     "prettier": "3.0.0"
   },
   "scripts": {

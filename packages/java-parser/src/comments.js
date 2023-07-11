@@ -1,7 +1,5 @@
 "use strict";
 
-const findLast = require("lodash/findLast");
-
 /**
  * Search where is the position of the comment in the token array by
  * using dichotomic search.
@@ -291,8 +289,7 @@ function matchFormatterOffOnPairs(comments) {
  * @param commentPairs
  */
 function shouldNotFormat(node, commentPairs) {
-  const matchingPair = findLast(
-    commentPairs,
+  const matchingPair = commentPairs.findLast(
     comment => comment.off.endOffset < node.location.startOffset
   );
   if (

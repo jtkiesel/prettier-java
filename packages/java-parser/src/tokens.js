@@ -1,6 +1,5 @@
 "use strict";
 const { createToken: createTokenOrg, Lexer } = require("chevrotain");
-const camelCase = require("lodash/camelCase");
 
 let chars;
 // A little mini DSL for easier lexer definition.
@@ -254,6 +253,11 @@ const restrictedKeywords = [
   "non-sealed",
   "permits"
 ];
+
+const camelCase = string =>
+  string
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase());
 
 // By sorting the keywords in descending order we avoid ambiguities
 // of common prefixes.

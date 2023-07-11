@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 "use strict";
 
-const _ = require("lodash");
 const path = require("path");
 const fs = require("fs");
 const JavaParser = require("../src/parser");
@@ -75,12 +74,14 @@ const enrichChildTerminal = (rule, optional, children) => {
   }
 };
 
+const upperFirst = string => string[0].toUpperCase() + string.substr(1);
+
 const getType = rule => {
   if (rule.type === "Terminal") {
     return "IToken";
   }
 
-  return _.upperFirst(rule.name) + "CstNode";
+  return upperFirst(rule.name) + "CstNode";
 };
 
 const printTypes = node => {
@@ -91,7 +92,7 @@ const printTypes = node => {
 };
 
 const printNode = node => {
-  const nodeNameUpperFirst = _.upperFirst(node.name);
+  const nodeNameUpperFirst = upperFirst(node.name);
 
   return `export interface ${nodeNameUpperFirst}CstNode extends CstNode {
   name: "${node.name}";
@@ -100,7 +101,7 @@ const printNode = node => {
 };
 
 const printNodeCtx = node => {
-  const nodeNameUpperFirst = _.upperFirst(node.name);
+  const nodeNameUpperFirst = upperFirst(node.name);
 
   return `export type ${nodeNameUpperFirst}Ctx = {
   ${Object.values(node.children)
@@ -155,7 +156,7 @@ interface JavaCstVisitorWithDefaultsConstructor<IN, OUT> {
 };
 
 const getVisitorFunction = node => {
-  const nodeNameUpperFirst = _.upperFirst(node.name);
+  const nodeNameUpperFirst = upperFirst(node.name);
   return `${node.name}(ctx: ${nodeNameUpperFirst}Ctx, param?: IN): OUT;`;
 };
 

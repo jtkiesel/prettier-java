@@ -1,6 +1,5 @@
 "use strict";
 
-const _ = require("lodash");
 const path = require("path");
 const klawSync = require("klaw-sync");
 const { expect } = require("chai");
@@ -37,10 +36,10 @@ function createSampleSpecs(sampleName) {
       fileDesc.path.endsWith(".java")
     );
 
-    if (_.isEmpty(sampleFiles)) {
+    if (sampleFiles.length === 0) {
       throw `Missing sample-dir: <${samplesDir}> did you forget to clone the samples?`;
     }
-    _.forEach(javaSampleFiles, fileDesc => {
+    javaSampleFiles.forEach(fileDesc => {
       const relativePath = path.relative(__dirname, fileDesc.path);
       it(`Can Parse <${relativePath}>`, () => {
         const sampleText = fs.readFileSync(fileDesc.path, "utf8");

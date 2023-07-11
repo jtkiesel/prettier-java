@@ -4,7 +4,6 @@ const klawSync = require("klaw-sync");
 const path = require("path");
 const fs = require("fs");
 const javaParser = require("../src/index");
-const _ = require("lodash");
 
 const options = {
   failFast: false,
@@ -12,8 +11,8 @@ const options = {
   printErrors: true
 };
 
-let printProgress = _.noop;
-let printErrors = _.noop;
+let printProgress = () => {};
+let printErrors = () => {};
 if (options.printProgress) {
   printProgress = console.log;
 }
@@ -29,7 +28,7 @@ const javaSampleFiles = sampleFiles.filter(fileDesc =>
   fileDesc.path.endsWith(".java")
 );
 
-const javaPathAndText = _.map(javaSampleFiles, fileDesc => {
+const javaPathAndText = javaSampleFiles.map(fileDesc => {
   const currJavaFileString = fs.readFileSync(fileDesc.path, "utf8");
   const relativePath = path.relative(__dirname, fileDesc.path);
 
@@ -44,9 +43,9 @@ javaPathAndText.forEach(fileDesc => {
   // TODO: read the files BEFORE the benchmark started to only bench the parsing speed...
   const relativePath = fileDesc.path;
   try {
-    const sampleStartTime = _.now();
+    const sampleStartTime = Date.now();
     javaParser.parse(fileDesc.text);
-    const sampleEndTime = _.now();
+    const sampleEndTime = Date.now();
     const totalSampleTime = sampleEndTime - sampleStartTime;
     printProgress(
       `Success parsing: <${relativePath}> - <${totalSampleTime}ms>`
