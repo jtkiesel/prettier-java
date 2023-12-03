@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkwebsite=self.webpackChunkwebsite||[]).push([[2633],{7099:e=>{e.exports=JSON.parse('{"label":"hello","permalink":"/prettier-java/blog/tags/hello","allTagsPath":"/prettier-java/blog/tags","count":2,"unlisted":false}')}}]);
