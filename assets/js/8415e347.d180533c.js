@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkwebsite=self.webpackChunkwebsite||[]).push([[4358],{3001:e=>{e.exports=JSON.parse('{"label":"facebook","permalink":"/prettier-java/blog/tags/facebook","allTagsPath":"/prettier-java/blog/tags","count":1,"unlisted":false}')}}]);
