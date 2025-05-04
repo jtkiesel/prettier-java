@@ -49,9 +49,6 @@ export default class JavaParser extends CstParser {
 
     const $ = this;
 
-    this.mostEnclosiveCstNodeByStartOffset = {};
-    this.mostEnclosiveCstNodeByEndOffset = {};
-
     // ---------------------
     // Productions from §3 (Lexical Structure)
     // ---------------------
@@ -83,10 +80,6 @@ export default class JavaParser extends CstParser {
       return;
     }
     super.cstPostNonTerminal(ruleCstResult, ruleName);
-    this.mostEnclosiveCstNodeByStartOffset[ruleCstResult.location.startOffset] =
-      ruleCstResult;
-    this.mostEnclosiveCstNodeByEndOffset[ruleCstResult.location.endOffset] =
-      ruleCstResult;
 
     shouldNotFormat(ruleCstResult, this.onOffCommentPairs);
   }
