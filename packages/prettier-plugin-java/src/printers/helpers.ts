@@ -263,18 +263,32 @@ export function printArrayInitializer<
 }
 
 export function printBlock(path: AstPath<JavaNonTerminal>, contents: Doc[]) {
-  if (!contents.length) {
-    const danglingComments = printDanglingComments(path);
-    return danglingComments.length
-      ? ["{", indent([hardline, ...danglingComments]), hardline, "}"]
-      : "{}";
+  if (contents.length) {
+    return group([
+      "{",
+      indent([hardline, ...join(hardline, contents)]),
+      hardline,
+      "}"
+    ]);
   }
-  return group([
-    "{",
-    indent([hardline, ...join(hardline, contents)]),
-    hardline,
-    "}"
-  ]);
+  const danglingComments = printDanglingComments(path);
+  if (danglingComments.length) {
+    return ["{", indent([hardline, ...danglingComments]), hardline, "}"];
+  }
+  const parentName = path.grandparent?.name;
+  const greatGrandparentName = path.getNode(6)?.name;
+  return path.node.name === "switchBlock" ||
+    (parentName &&
+      [
+        "catchClause",
+        "finally",
+        "switchRule",
+        "tryStatement",
+        "tryWithResourcesStatement"
+      ].includes(parentName)) ||
+    greatGrandparentName === "ifStatement"
+    ? ["{", hardline, "}"]
+    : "{}";
 }
 
 export function printName(
