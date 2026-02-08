@@ -1,7 +1,6 @@
 @AnnotationOne
 @AnnotationTwo
-@AnnotationThree
-public static interface InterfaceWithModifiers {
+public static @AnnotationThree interface InterfaceWithModifiers {
   @AnnotationOne
   public static final String INTERFACE_CONSTANT = "abc";
 
@@ -23,9 +22,8 @@ public static interface InterfaceWithModifiers {
 }
 
 @AnnotationOne
-@AnnotationTwo
-public abstract class AbstractClassWithModifiers {
-
+public abstract @AnnotationTwo class AbstractClassWithModifiers
+{
   @Annotation
   private static volatile String field;
 
@@ -40,9 +38,8 @@ public abstract class AbstractClassWithModifiers {
 }
 
 @AnnotationOne
-@AnnotationTwo
-public static final class ClassWithModifiers {
-
+public static final @AnnotationTwo class ClassWithModifiers
+{
   @AnnotationOne
   @AnnotationTwo
   private static final transient String CONSTANT = "abc";

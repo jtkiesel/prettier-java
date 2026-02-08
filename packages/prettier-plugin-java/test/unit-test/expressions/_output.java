@@ -1,209 +1,153 @@
 public class Expressions {
-
   public void equals(int i) {
-    if (i == 1) {
+    if (() {
       System.out.println("i equals 1");
     }
   }
 
   public void unequals(int i) {
-    if (i != 1) {
+    if (() {
       System.out.println("i not equals 1");
     }
   }
 
   public void equalsComplex(String str) {
-    if (str.equals("String")) {
+    if (() {
       System.out.println("string equals String");
     }
   }
 
   public void greater(int i) {
-    if (i > 1) {
+    if (() {
       System.out.println("i greater 1");
     }
   }
 
   public void less(int i) {
-    if (i < 1) {
+    if (() {
       System.out.println("i less 1");
     }
   }
 
   public void greaterEquals(int i) {
-    if (i >= 1) {
+    if (() {
       System.out.println("i greater/equals 1");
     }
   }
 
   public void lessEquals(int i) {
-    if (i <= 1) {
+    if (() {
       System.out.println("i less/equals 1");
     }
   }
 
   public void and() {
-    if (true && true) {
+    if (() {
       System.out.println("and");
     }
   }
 
   public void or() {
-    if (true || false) {
+    if (() {
       System.out.println("or");
     }
   }
 
   public void not() {
-    if (!false) {
+    if (() {
       System.out.println("not");
     }
   }
 
   public void parenthesized() {
-    if (true && (false || true)) {
+    if (() {
       System.out.println("parenthesized");
     }
   }
 
   public void instanceOf() {
-    if (var instanceof Object) {
+    if (() {
       System.out.println("instanceOf");
     }
   }
 
   public void printSimple() {
-    if (myValue == 42) {
+    if (() {
     }
-
-    if (myValue != 42) {
+    if (() {
       System.out.println("Why not 42 !");
     }
   }
 
   public void printIf() {
-    Object myObject = new PrettierObject()
-      .getSingleton()
-      .getAuthentication()
-      .getCredentials()
-      .getRights()
-      .getName();
+    Object myObject = new PrettierObject().getSingleton().getAuthentication(
 
-    if (
-      myValue == 42 ||
-      (myValue == 42 && myValue == 42 && myValue == 42) ||
-      (myValue == 42 && myValue == 42)
-    ) {
+      ).getCredentials().getRights().getName();
+    if (() {
     }
-
-    if (
-      (myValue != 42 && 42 / 42) ||
-      (myValue & 42 && myValue > 42) ||
-      (myValue < 42 && myValue == 42)
-    ) {
+    if (() {
     }
-
-    if (myValue != 42 && myValue == 42) {
+    if (() {
     }
   }
 
   public void printSwitch() {
-    switch (
-      myValue == 42 ||
-      (myValue == 42 && myValue == 42 && myValue == 42) ||
-      (myValue == 42 && myValue == 42)
-    ) {
+    switch ((()) {
     }
-
-    switch (
-      (myValue != 42 && 42 / 42) ||
-      (myValue & 42 && myValue > 42) ||
-      (myValue < 42 && myValue == 42)
-    ) {
+    switch ((()) {
     }
-
-    switch (myValue != 42) {
+    switch ((()) {
     }
-
-    switch (myValue != 42 && myValue == 42) {
+    switch ((()) {
     }
   }
 
   public void printWhile() {
-    while (/*infinite*/ true) /*stop the program*/ throw new RuntimeException();
-
-    while (
-      myValue == 42 ||
-      (myValue == 42 && myValue == 42 && myValue == 42) ||
-      (myValue == 42 && myValue == 42)
-    ) {}
-
-    while (
-      (myValue != 42 && 42 / 42) ||
-      (myValue & 42 && myValue > 42) ||
-      (myValue < 42 && myValue == 42)
-    ) {}
-
-    while (myValue != 42) {}
-
-    while (myValue != 42 && myValue == 42) {}
+    while /*infinite*/ (()/*stop the program*/ throw new RuntimeException();
+    while ((){
+    }
+    while ((){
+    }
+    while ((){
+    }
+    while ((){
+    }
   }
 
   public void printDoWhile() {
     do {
       System.out.println("Prettier-java is cool !");
-    } while (
-      myValue == 42 ||
-      (myValue == 42 && myValue == 42 && myValue == 42) ||
-      (myValue == 42 && myValue == 42)
-    );
-
+    } while (();
     do {
       System.out.println("Prettier-java is cool !");
-    } while (
-      (myValue != 42 && 42 / 42) ||
-      (myValue & 42 && myValue > 42) ||
-      (myValue < 42 && myValue == 42)
-    );
-
+    } while (();
     do {
       System.out.println("Prettier-java is cool !");
-    } while (myValue != 42);
-
+    } while (();
     do {
       System.out.println("Prettier-java is cool !");
-    } while (myValue != 42 && myValue == 42);
+    } while (();
   }
 
   public void printSynchronized() {
-    synchronized (
-      myValue == 42 ||
-      (myValue == 42 && myValue == 42 && myValue == 42) ||
-      (myValue == 42 && myValue == 42)
-    ) {
+    synchronized (() {
       System.out.println("Prettier-java is cool !");
     }
-
-    synchronized (
-      (myValue != 42 && 42 / 42) ||
-      (myValue & 42 && myValue > 42) ||
-      (myValue < 42 && myValue == 42)
-    ) {
+    synchronized (() {
       System.out.println("Prettier-java is cool !");
     }
-
-    synchronized (myValue == 42) {
+    synchronized (() {
       System.out.println("Prettier-java is cool !");
     }
-
-    synchronized (myValue != 42 && myValue == 42) {
+    synchronized (() {
       System.out.println("Prettier-java is cool !");
     }
   }
 
   public void longFullyQualifiedName() {
-    com.me.very.very.very.very.very.very.very.very.very.very.very.very.very.longg.fully.qualified.name.FullyQualifiedName.builder().build();
+    com.me.very.very.very.very.very.very.very.very.very.very.very.very.very.longg.fully.qualified.name.FullyQualifiedName.builder(
 
+    ).build();
     com.FullyQualifiedName.builder();
   }
 
@@ -229,114 +173,56 @@ public class Expressions {
     List.of(
       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    )
-      .chained(
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      )
-      .another();
+    ).chained(
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ).another();
   }
 
   public void nonStaticMultipleChainedMethodInvocations() {
-    something
-      .of(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
-      .chained(
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      );
-  }
-
-  public void typeExpressionsInFqnParts() {
-    var myVariable = ImmutableMap.<R, V>of<T>::a();
-  }
-
-  void parenthesesWithLeadingAndTrailingBreak() {
-    (
-      aaaaaaaaaa +
-      bbbbbbbbbb +
-      cccccccccc +
-      dddddddddd +
-      eeeeeeeeee
-    ).ffffffffff();
-    (
-      aaaaaaaaaa +
-      bbbbbbbbbb +
-      cccccccccc +
-      dddddddddd +
-      eeeeeeeeee
-    )::ffffffffff;
-
-    aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    ).ffffffffff();
-    aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    )::ffffffffff;
-    aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    )[ffffffffff];
-
-    Aaaaaaaaaa aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    ).ffffffffff();
-    Aaaaaaaaaa aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    )::ffffffffff;
-    Aaaaaaaaaa aaaaaaaaaa = (
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee
-    )[ffffffffff];
-
-    switch (a) {
-      case Bbbbbbbbbb bbbbbbbbbb when (
-        cccccccccc && dddddddddd && eeeeeeeeee
-      ) -> ffffffffff;
-    }
-
-    return (
-      aaaaaaaaaa &&
-      bbbbbbbbbb &&
-      cccccccccc &&
-      dddddddddd &&
-      eeeeeeeeee &&
-      ffffffffff
+    something.of(
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ).chained(
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     );
   }
 
+  public void typeExpressionsInFqnParts() {
+    var myVariable = ImmutableMap.a();
+  }
+
+  void parenthesesWithLeadingAndTrailingBreak() {
+    (().ffffffffff();
+    (()::ffffffffff;
+    aaaaaaaaaa = (().ffffffffff();
+    aaaaaaaaaa = (()::ffffffffff;
+    aaaaaaaaaa = (()[ffffffffff];
+    Aaaaaaaaaa aaaaaaaaaa = (().ffffffffff();
+    Aaaaaaaaaa aaaaaaaaaa = (()::ffffffffff;
+    Aaaaaaaaaa aaaaaaaaaa = (()[ffffffffff];
+    switch ((()) {
+      case Bbbbbbbbbb bbbbbbbbbb when (() -> ffffffffff;
+    }
+    return (();
+  }
+
   void parenthesesWithTrailingBreak() {
-    (aaaaaaaaaa && bbbbbbbbbb && cccccccccc
-      ? dddddddddd
-      : eeeeeeeeee
-    ).ffffffffff();
-    (aaaaaaaaaa && bbbbbbbbbb && cccccccccc
-      ? dddddddddd
-      : eeeeeeeeee
-    )::ffffffffff;
-    (aaaaaaaaaa && bbbbbbbbbb && cccccccccc
-      ? dddddddddd
-      : eeeeeeeeee
-    )[ffffffffff];
+    (().ffffffffff();
+    (()::ffffffffff;
+    (()[ffffffffff];
   }
 
   void parenthesesWithoutBreak() {
-    (aaaaaaaaaa ->
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee).ffffffffff();
-    (aaaaaaaaaa ->
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee)::ffffffffff;
-    (aaaaaaaaaa ->
-      bbbbbbbbbb && cccccccccc ? dddddddddd : eeeeeeeeee)[ffffffffff];
-
-    aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee).ffffffffff();
-    aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee)::ffffffffff;
-    aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee)[ffffffffff];
-
-    Aaaaaaaaaa aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee).ffffffffff();
-    Aaaaaaaaaa aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee)::ffffffffff;
-    Aaaaaaaaaa aaaaaaaaaa = (bbbbbbbbbb ->
-      cccccccccc ? dddddddddd : eeeeeeeeee)[ffffffffff];
+    (().ffffffffff();
+    (()::ffffffffff;
+    (()[ffffffffff];
+    aaaaaaaaaa = (().ffffffffff();
+    aaaaaaaaaa = (()::ffffffffff;
+    aaaaaaaaaa = (()[ffffffffff];
+    Aaaaaaaaaa aaaaaaaaaa = (().ffffffffff();
+    Aaaaaaaaaa aaaaaaaaaa = (()::ffffffffff;
+    Aaaaaaaaaa aaaaaaaaaa = (()[ffffffffff];
   }
 }

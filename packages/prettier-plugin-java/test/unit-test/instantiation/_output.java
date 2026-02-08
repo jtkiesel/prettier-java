@@ -1,8 +1,6 @@
 public class Instantiation {
-
   public void instantiation() {
     new Constructor("few", "arguments");
-
     new Constructor(
       "a",
       "really",
@@ -21,7 +19,8 @@ public class Instantiation {
       "should",
       "wrap"
     );
+    new MethodFollowingConstructor(
 
-    new MethodFollowingConstructor().aLongEnoughMethodNameToExtendPastPrintWidth();
+    ).aLongEnoughMethodNameToExtendPastPrintWidth();
   }
 }

@@ -1,13 +1,11 @@
+import { Doc } from "prettier";
 import { builders } from "prettier/doc";
+import { isComment } from "../comments.js";
 import {
   call,
-  definedKeys,
-  flatMap,
-  isNonTerminal,
   map,
   onlyDefinedKey,
   printClassType,
-  printList,
   printSingle,
   type JavaNodePrinters
 } from "./helpers.js";
@@ -15,18 +13,21 @@ import {
 const { group, indent, join, line, softline } = builders;
 
 export default {
-  primitiveType(path, print) {
-    const { children } = path.node;
-    const typeKey = onlyDefinedKey(children, ["Boolean", "numericType"]);
-    return join(" ", [
-      ...map(path, print, "annotation"),
-      call(path, print, typeKey)
-    ]);
+  boolean_type(path) {
+    return path.node.text;
   },
 
-  numericType: printSingle,
-  integralType: printSingle,
-  floatingPointType: printSingle,
+  integral_type(path) {
+    return path.node.text;
+  },
+
+  floating_point_type(path) {
+    return path.node.text;
+  },
+
+  void_type(path) {
+    return path.node.text;
+  },
 
   referenceType(path, print) {
     const { children } = path.node;
@@ -41,6 +42,13 @@ export default {
     ]);
   },
 
+  array_type(path, print) {
+    return [
+      path.call(print, "elementNode"),
+      path.call(print, "dimensionsNode")
+    ];
+  },
+
   classOrInterfaceType: printSingle,
   classType: printClassType,
   interfaceType: printSingle,
@@ -52,60 +60,67 @@ export default {
     ]);
   },
 
-  dims(path, print) {
-    return flatMap(
-      path,
-      childPath => {
-        const child = print(childPath);
-        return isNonTerminal(childPath.node) ? [child, " "] : child;
-      },
-      definedKeys(path.node.children, ["annotation", "LSquare", "RSquare"])
-    );
+  dimensions(path, print) {
+    const parts: Doc[] = [];
+    path.each(child => {
+      if (isComment(child.node)) {
+        return;
+      }
+
+      if (child.node.isNamed) {
+        parts.push(print(child), " ");
+      } else {
+        parts.push(child.node.text);
+      }
+    }, "children");
+
+    return parts;
   },
 
-  typeParameter(path, print) {
-    const parameter = [
-      ...map(path, print, "typeParameterModifier"),
-      call(path, print, "typeIdentifier")
-    ];
-    if (path.node.children.typeBound) {
-      parameter.push(call(path, print, "typeBound"));
-    }
+  type_parameter(path, print) {
+    const parameter: Doc = [];
+
+    path.each(child => {
+      if (!isComment(child.node)) {
+        parameter.push(print(child));
+      }
+    }, "children");
+
     return join(" ", parameter);
   },
 
-  typeParameterModifier: printSingle,
+  type_bound(path, print) {
+    const types: Doc[] = [];
 
-  typeBound(path, print) {
-    const bound = ["extends ", call(path, print, "classOrInterfaceType")];
-    if (path.node.children.additionalBound) {
-      bound.push(
-        group(
-          indent([line, ...join(line, map(path, print, "additionalBound"))])
-        )
-      );
-    }
-    return bound;
+    path.each(child => {
+      if (!isComment(child.node)) {
+        types.push(print(child));
+      }
+    }, "namedChildren");
+
+    return types.length === 1
+      ? ["extends ", types[0]]
+      : group(indent(["extends", line, ...join(["&", line], types)]));
   },
 
-  additionalBound(path, print) {
-    return ["& ", call(path, print, "interfaceType")];
-  },
+  type_arguments(path, print) {
+    const types: Doc[] = [];
 
-  typeArguments(path, print) {
-    return group([
-      "<",
-      indent([softline, call(path, print, "typeArgumentList")]),
-      softline,
-      ">"
-    ]);
-  },
+    path.each(child => {
+      if (!isComment(child.node)) {
+        types.push(print(child));
+      }
+    }, "namedChildren");
 
-  typeArgumentList(path, print) {
-    return printList(path, print, "typeArgument");
+    return types.length
+      ? group([
+          "<",
+          indent([softline, join([",", line], types)]),
+          softline,
+          ">"
+        ])
+      : "<>";
   },
-
-  typeArgument: printSingle,
 
   wildcard(path, print) {
     const wildcard = [...map(path, print, "annotation"), "?"];

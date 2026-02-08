@@ -111,7 +111,6 @@ public enum Enum {
 }
 
 class CLassWithEnum {
-
   public static enum VALID_THINGS {
     FIRST,
     SECOND,
@@ -121,13 +120,10 @@ class CLassWithEnum {
 public enum OtherEnum {
   ONE,
   TWO,
-
   THREE,
-
   FOUR,
   /* Five */
   FIVE,
-
   /* Six */
   SIX,
 }
@@ -174,7 +170,8 @@ enum Aaaaaaaaaa
 }
 
 enum Aaaaaaaaaa
-  implements Bbbbbbbbbb, Cccccccccc, Dddddddddd, Eeeeeeeeee, Ffffffffff {}
+  implements Bbbbbbbbbb, Cccccccccc, Dddddddddd, Eeeeeeeeee, Ffffffffff
+{}
 
 enum Aaaaaaaaaa
   implements
@@ -195,4 +192,5 @@ enum Aaaaaaaaaa
     Dddddddddd,
     Eeeeeeeeee,
     Ffffffffff,
-    Gggggggggg {}
+    Gggggggggg
+{}

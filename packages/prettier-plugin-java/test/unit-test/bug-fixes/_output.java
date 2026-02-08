@@ -1,48 +1,50 @@
 class T {
-
   // Fix for https://github.com/jhipster/prettier-java/issues/453
-  SomeClass.@Valid SomeInnerClass someInnerClass = someClass
-    .getInteractions()
-    .get(0);
+  @Valid
+  SomeClass
+  SomeInnerClass someInnerClass = someClass.getInteractions().get(0);
 
   // Fix for https://github.com/jhipster/prettier-java/issues/444
-  void process(
-    Map.@NonNull Entry<String, SkeletonConfiguration> entry,
-    @NonNull Map<String, Object> context
-  ) {}
+  void process(@NonNull
+  Map
+  Entry<String, SkeletonConfiguration> entry,
+  @NonNull
+  Map<String, Object> context) {}
 }
 
 // Fix for https://github.com/jhipster/prettier-java/issues/607
 class Currency {
+  Currency(Currency this this) {}
 
-  Currency(Currency this) {}
+  Currency(Currency this this,
+  Currency other) {}
 
-  Currency(Currency this, Currency other) {}
+  Currency(@AnnotatedUsage
+  Currency this,
+  Currency other) {}
 
-  Currency(@AnnotatedUsage Currency this, Currency other) {}
+  Currency(@AnnotatedUsage
+  Currency this,
+  String aaaaaaaaaa,
+  String bbbbbbbbbb) {}
 
-  Currency(
-    @AnnotatedUsage Currency this,
-    String aaaaaaaaaa,
-    String bbbbbbbbbb
-  ) {}
+  String getCode(Currency this this) {}
 
-  String getCode(Currency this) {}
+  int compareTo(Currency this this,
+  Currency other) {}
 
-  int compareTo(Currency this, Currency other) {}
+  int compareTo(@AnnotatedUsage
+  Currency this,
+  Currency other) {}
 
-  int compareTo(@AnnotatedUsage Currency this, Currency other) {}
-
-  int compareTo(
-    @AnnotatedUsage Currency this,
-    String aaaaaaaaaa,
-    String bbbbbbbbbb
-  ) {}
+  int compareTo(@AnnotatedUsage
+  Currency this,
+  String aaaaaaaaaa,
+  String bbbbbbbbbb) {}
 
   class Inner {
+    Inner(Currency Currency.this this) {}
 
-    Inner(Currency Currency.this) {}
-
-    String getCode(Currency Currency.this) {}
+    String getCode(Currency Currency.this this) {}
   }
 }

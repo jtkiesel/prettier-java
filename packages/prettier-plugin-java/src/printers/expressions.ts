@@ -1,30 +1,27 @@
 import type {
-  BinaryExpressionCstNode,
   FqnOrRefTypeCtx,
-  PrimaryCstNode,
   StringTemplateCstNode,
   TextBlockTemplateCstNode
 } from "java-parser";
 import type { AstPath, Doc } from "prettier";
 import { builders, utils } from "prettier/doc";
-import type { JavaComment } from "../comments.js";
+import { isComment } from "../comments.js";
+import { SyntaxNode, SyntaxType } from "../tree-sitter-java.js";
 import {
   call,
   definedKeys,
   each,
   findBaseIndent,
   flatMap,
-  hasAssignmentOperators,
+  hasChild,
   hasLeadingComments,
   hasNonAssignmentOperators,
   indentInParentheses,
-  isNonTerminal,
   isTerminal,
+  JavaNode,
   map,
   onlyDefinedKey,
-  printDanglingComments,
   printList,
-  printName,
   printSingle,
   type IterProperties,
   type JavaNodePrinters,
@@ -49,104 +46,86 @@ const {
 const { removeLines, willBreak } = utils;
 
 export default {
-  expression: printSingle,
-
-  lambdaExpression(path, print, _, args = {}) {
+  lambda_expression(path, print, _, args = {}) {
     const hug = (args as { hug?: boolean }).hug ?? false;
-    const parameters = call(path, print, "lambdaParameters");
+    const parameters = path.call(print, "parametersNode");
     const expression = [hug ? removeLines(parameters) : parameters, " ->"];
-    const lambdaExpression =
-      path.node.children.lambdaBody[0].children.expression;
-    const body = call(path, print, "lambdaBody");
-    if (lambdaExpression) {
+
+    const body = path.call(print, "bodyNode");
+    if (path.node.bodyNode.type === SyntaxType.Block) {
+      expression.push(" ", body);
+    } else {
       const suffix = indent([line, body]);
       expression.push(group(hug ? [suffix, softline] : suffix));
-    } else {
-      expression.push(" ", body);
     }
+
     return expression;
   },
 
-  lambdaParameters(path, print, options) {
-    const parameters = printSingle(path, print);
-    return !path.node.children.lambdaParametersWithBraces &&
-      options.arrowParens === "always"
-      ? ["(", parameters, ")"]
-      : parameters;
-  },
+  inferred_parameters(path, print, options) {
+    const identifiers: Doc[] = [];
+    path.each(child => {
+      if (child.node.type === SyntaxType.Identifier) {
+        identifiers.push(print(child));
+      }
+    }, "namedChildren");
 
-  lambdaParametersWithBraces(path, print, options) {
-    const { lambdaParameterList } = path.node.children;
-    if (!lambdaParameterList) {
+    if (!identifiers.length) {
       return "()";
     }
-    const { conciseLambdaParameterList, normalLambdaParameterList } =
-      lambdaParameterList[0].children;
-    const parameterCount = (conciseLambdaParameterList?.[0].children
-      .conciseLambdaParameter ??
-      normalLambdaParameterList?.[0].children.normalLambdaParameter)!.length;
-    const parameters = call(path, print, "lambdaParameterList");
-    if (parameterCount > 1) {
+
+    const parameters = join([",", line], identifiers);
+    if (identifiers.length > 1) {
       return indentInParentheses(parameters);
     }
-    return conciseLambdaParameterList && options.arrowParens === "avoid"
+    return options.arrowParens === "avoid"
       ? parameters
-      : ["(", parameters, ")"];
+      : ["(", ...parameters, ")"];
   },
 
-  lambdaParameterList: printSingle,
-
-  conciseLambdaParameterList(path, print) {
-    return printList(path, print, "conciseLambdaParameter");
-  },
-
-  normalLambdaParameterList(path, print) {
-    return printList(path, print, "normalLambdaParameter");
-  },
-
-  normalLambdaParameter: printSingle,
-
-  regularLambdaParameter(path, print) {
-    return join(" ", [
-      ...map(path, print, "variableModifier"),
-      call(path, print, "lambdaParameterType"),
-      call(path, print, "variableDeclaratorId")
-    ]);
-  },
-
-  lambdaParameterType: printSingle,
-  conciseLambdaParameter: printSingle,
   lambdaBody: printSingle,
 
-  conditionalExpression(path, print, options) {
-    const binaryExpression = call(path, print, "binaryExpression");
-    const grandparentNodeName = (path.getNode(4) as JavaNonTerminal | null)
-      ?.name;
-    const isInParentheses = grandparentNodeName === "parenthesisExpression";
-    if (!path.node.children.QuestionMark) {
-      return isInParentheses ? binaryExpression : group(binaryExpression);
-    }
-    const isInReturn = grandparentNodeName === "returnStatement";
-    const prefix = group(
-      isInReturn ? indent(binaryExpression) : binaryExpression
-    );
-    const [consequent, alternate] = map(path, print, "expression");
+  ternary_expression(path, print, options) {
+    const condition = path.call(print, "conditionNode");
+    const consequence = path.call(print, "consequenceNode");
+    const alternative = path.call(print, "alternativeNode");
+
+    const grandparentNodeType = (path.getNode(4) as SyntaxNode | null)?.type;
+    const isInReturn = grandparentNodeType === SyntaxType.ReturnStatement;
+    const isNestedTernary =
+      grandparentNodeType === SyntaxType.TernaryExpression;
     const suffix = [
       line,
-      ["? ", options.useTabs ? indent(consequent) : align(2, consequent)],
+      ["? ", options.useTabs ? indent(consequence) : align(2, consequence)],
       line,
-      [": ", options.useTabs ? indent(alternate) : align(2, alternate)]
+      [": ", options.useTabs ? indent(alternative) : align(2, alternative)]
     ];
-    const isNestedTernary = grandparentNodeName === "conditionalExpression";
+
+    const prefix = group(isInReturn ? indent(condition) : condition);
     const alignedSuffix =
       !isNestedTernary || options.useTabs
         ? suffix
         : align(Math.max(0, options.tabWidth - 2), suffix);
+
     if (isNestedTernary) {
       return [prefix, alignedSuffix];
     }
+
     const parts = [prefix, indent(alignedSuffix)];
-    return isInParentheses ? parts : group(parts);
+    return grandparentNodeType === SyntaxType.ParenthesizedExpression
+      ? parts
+      : group(parts);
+  },
+
+  assignment_expression(path, print) {
+    const groupId = Symbol("assignment");
+    return [
+      path.call(print, "leftNode"),
+      " ",
+      path.node.operatorNode.text,
+      group(indent(line), { id: groupId }),
+      indentIfBreak(path.call(print, "rightNode"), { groupId })
+    ];
   },
 
   binaryExpression(path, print, options) {
@@ -313,6 +292,18 @@ export default {
 
   primaryPrefix: printSingle,
 
+  field_access(path, print) {
+    const parts = [path.call(print, "objectNode")];
+
+    if (path.node.children.filter(({ type }) => type === ".").length === 2) {
+      parts.push("super");
+    }
+
+    parts.push(path.call(print, "fieldNode"));
+
+    return join(".", parts);
+  },
+
   primarySuffix(path, print) {
     const { children } = path.node;
     if (!children.Dot) {
@@ -372,39 +363,48 @@ export default {
     return [".", ...join(" ", [...map(path, print, "annotation"), type])];
   },
 
-  fqnOrRefTypePartCommon(path, print) {
-    const { children } = path.node;
-    const keywordKey = onlyDefinedKey(children, ["Identifier", "Super"]);
-    const keyword = call(path, print, keywordKey);
-    return children.typeArguments
-      ? [keyword, call(path, print, "typeArguments")]
-      : keyword;
+  generic_type(path, print) {
+    const typeIdentifierIndex = path.node.namedChildren.findIndex(
+      ({ type }) =>
+        type === SyntaxType.ScopedTypeIdentifier ||
+        type === SyntaxType.TypeIdentifier
+    );
+    const typeArgumentsIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.TypeArguments
+    );
+    return [
+      path.call(print, "namedChildren", typeIdentifierIndex),
+      path.call(print, "namedChildren", typeArgumentsIndex)
+    ];
   },
 
-  parenthesisExpression(path, print) {
-    const expression = call(path, print, "expression");
-    const primaryAncestor = path.getNode(4) as PrimaryCstNode | null;
-    const binaryExpressionAncestor = path.getNode(
-      8
-    ) as BinaryExpressionCstNode | null;
-    const outerAncestor = path.getNode(14) as JavaNonTerminal | null;
-    const { conditionalExpression, lambdaExpression } =
-      path.node.children.expression[0].children;
-    const hasLambda = lambdaExpression !== undefined;
-    const hasTernary =
-      conditionalExpression?.[0].children.QuestionMark !== undefined;
-    const hasSuffix = primaryAncestor?.children.primarySuffix !== undefined;
+  parenthesized_expression(path, print) {
+    const expressionIndex = path.node.children.findIndex(
+      child => !isComment(child)
+    );
+    const expression = path.call(print, "children", expressionIndex);
+    const grandparentNode = path.grandparent as JavaNode | null;
+    const expressionNode = path.node.children[expressionIndex];
+    const hasLambda = expressionNode.type === SyntaxType.LambdaExpression;
+    const hasTernary = expressionNode.type === SyntaxType.TernaryExpression;
+    const hasSuffix =
+      grandparentNode &&
+      (grandparentNode.type === SyntaxType.ArrayAccess ||
+        grandparentNode.type === SyntaxType.ExplicitConstructorInvocation ||
+        grandparentNode.type === SyntaxType.FieldAccess ||
+        grandparentNode.type === SyntaxType.MethodInvocation ||
+        grandparentNode.type === SyntaxType.MethodReference ||
+        grandparentNode.type === SyntaxType.ObjectCreationExpression);
     const isAssignment =
-      (outerAncestor?.name === "binaryExpression" &&
-        hasAssignmentOperators(outerAncestor)) ||
-      outerAncestor?.name === "variableInitializer";
+      grandparentNode &&
+      (grandparentNode.type === SyntaxType.AssignmentExpression ||
+        grandparentNode.type === SyntaxType.VariableDeclarator);
     if (!hasLambda && hasSuffix && (!hasTernary || isAssignment)) {
       return indentInParentheses(hasTernary ? group(expression) : expression);
     } else if (
-      binaryExpressionAncestor &&
-      Object.keys(binaryExpressionAncestor.children).length === 1 &&
-      outerAncestor &&
-      ["guard", "returnStatement"].includes(outerAncestor.name)
+      grandparentNode &&
+      (grandparentNode.type === SyntaxType.Guard ||
+        grandparentNode.type === SyntaxType.ReturnStatement)
     ) {
       return indentInParentheses(group(expression));
     } else if (hasTernary && hasSuffix && !isAssignment) {
@@ -418,82 +418,74 @@ export default {
     }
   },
 
-  castExpression: printSingle,
+  cast_expression(path, print) {
+    const types = path.map(print, "typeNodes");
+    const value = path.call(print, "valueNode");
 
-  primitiveCastExpression(path, print) {
-    return [
-      "(",
-      call(path, print, "primitiveType"),
-      ") ",
-      call(path, print, "unaryExpression")
-    ];
+    return types.length > 1
+      ? [indentInParentheses(join([" &", line], types)), " ", value]
+      : ["(", ...types, ") ", value];
   },
 
-  referenceTypeCastExpression(path, print) {
-    const { children } = path.node;
-    const type = call(path, print, "referenceType");
-    const cast = children.additionalBound
-      ? indentInParentheses(
-          join(line, [type, ...map(path, print, "additionalBound")])
-        )
-      : ["(", type, ")"];
-    const expressionKey = onlyDefinedKey(children, [
-      "lambdaExpression",
-      "unaryExpressionNotPlusMinus"
-    ]);
-    return [cast, " ", call(path, print, expressionKey)];
-  },
+  object_creation_expression(path, print) {
+    const expression: Doc[] = [];
 
-  newExpression: printSingle,
+    path.each(child => {
+      if (isComment(child.node)) {
+        return;
+      }
 
-  unqualifiedClassInstanceCreationExpression(path, print) {
-    const { children } = path.node;
-    const expression: Doc[] = ["new "];
-    if (children.typeArguments) {
-      expression.push(call(path, print, "typeArguments"));
-    }
-    expression.push(
-      call(path, print, "classOrInterfaceTypeToInstantiate"),
-      children.argumentList
-        ? group(["(", call(path, print, "argumentList"), ")"])
-        : "()"
-    );
-    if (children.classBody) {
-      expression.push(" ", call(path, print, "classBody"));
-    }
+      if (child.node.type === SyntaxType.ClassBody) {
+        expression.push(" ");
+      }
+
+      expression.push(print(child));
+
+      if (
+        child.node.type === SyntaxType.Annotation ||
+        child.node.type === SyntaxType.MarkerAnnotation ||
+        child.node.type === "new"
+      ) {
+        expression.push(" ");
+      }
+    }, "children");
+
     return expression;
   },
 
-  classOrInterfaceTypeToInstantiate(path, print) {
-    const { children } = path.node;
-    const type = children.annotation
-      ? flatMap(
-          path,
-          childPath => [
-            print(childPath),
-            isNonTerminal(childPath.node) ? " " : "."
-          ],
-          ["annotation", "Identifier"]
-        )
-      : printName(path, print);
-    if (children.typeArgumentsOrDiamond) {
-      type.push(call(path, print, "typeArgumentsOrDiamond"));
+  method_invocation(path, print) {
+    const parts: Doc[] = [];
+    if (hasChild(path, "objectNode")) {
+      parts.push(path.call(print, "objectNode"), ".");
     }
-    return type;
+    if (path.node.children.filter(({ type }) => type === ".").length === 2) {
+      parts.push("super", ".");
+    }
+    if (hasChild(path, "type_argumentsNode")) {
+      parts.push(path.call(print, "type_argumentsNode"));
+    }
+    parts.push(
+      path.call(print, "nameNode"),
+      group(path.call(print, "argumentsNode"))
+    );
+
+    return parts;
   },
 
-  typeArgumentsOrDiamond: printSingle,
-
-  diamond() {
-    return "<>";
+  argument_list(path, print) {
+    const args: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        args.push(child.call(print));
+      }
+    }, "namedChildren");
+    const allArgsExpandable = [
+      indent([softline, ...join([",", line], args)]),
+      softline
+    ];
+    return group(["(", ...allArgsExpandable, ")"]);
   },
-
-  methodInvocationSuffix(path, print) {
-    return path.node.children.argumentList
-      ? group(["(", call(path, print, "argumentList"), ")"])
-      : indentInParentheses(printDanglingComments(path), { shouldBreak: true });
-  },
-
+  /*
   argumentList(path, print) {
     const expressions = path.node.children.expression;
     const lastExpression = expressions.at(
@@ -543,97 +535,93 @@ export default {
       allArgsExpandable
     ]);
   },
+*/
+  array_creation_expression(path, print) {
+    const parts: Doc[] = ["new "];
 
-  arrayCreationExpression(path, print) {
-    const { children } = path.node;
-    const typeKey = onlyDefinedKey(children, [
-      "classOrInterfaceType",
-      "primitiveType"
-    ]);
-    const suffixKey = onlyDefinedKey(children, [
-      "arrayCreationExpressionWithoutInitializerSuffix",
-      "arrayCreationWithInitializerSuffix"
-    ]);
-    return ["new ", call(path, print, typeKey), call(path, print, suffixKey)];
-  },
+    path.each(child => {
+      if (
+        child.node.type === SyntaxType.Annotation ||
+        child.node.type === SyntaxType.MarkerAnnotation
+      ) {
+        parts.push(print(child), " ");
+      }
+    }, "namedChildren");
 
-  arrayCreationExpressionWithoutInitializerSuffix(path, print) {
-    const expressions = call(path, print, "dimExprs");
-    return path.node.children.dims
-      ? [expressions, call(path, print, "dims")]
-      : expressions;
-  },
-
-  arrayCreationWithInitializerSuffix(path, print) {
-    return [
-      call(path, print, "dims"),
-      " ",
-      call(path, print, "arrayInitializer")
-    ];
-  },
-
-  dimExprs(path, print) {
-    return map(path, print, "dimExpr");
-  },
-
-  dimExpr(path, print) {
-    return join(" ", [
-      ...map(path, print, "annotation"),
-      ["[", call(path, print, "expression"), "]"]
-    ]);
-  },
-
-  classLiteralSuffix(path, print) {
-    const lSquares = map(path, print, "LSquare");
-    const rSquares = map(path, print, "RSquare");
-    return [
-      ...lSquares.flatMap((lSquare, index) => [lSquare, rSquares[index]]),
-      ".class"
-    ];
-  },
-
-  arrayAccessSuffix(path, print) {
-    return ["[", call(path, print, "expression"), "]"];
-  },
-
-  methodReferenceSuffix(path, print) {
-    const { children } = path.node;
-    const reference: Doc[] = ["::"];
-    if (children.typeArguments) {
-      reference.push(call(path, print, "typeArguments"));
-    }
-    reference.push(
-      call(path, print, onlyDefinedKey(children, ["Identifier", "New"]))
+    parts.push(
+      path.call(print, "typeNode"),
+      path.map(print, "dimensionsNodes")
     );
+
+    if (hasChild(path, "valueNode")) {
+      parts.push(" ", path.call(print, "valueNode"));
+    }
+
+    return parts;
+  },
+
+  dimensions_expr(path, print) {
+    const parts: Doc[] = [];
+
+    path.each(child => {
+      if (
+        child.node.type === SyntaxType.Annotation ||
+        child.node.type === SyntaxType.MarkerAnnotation
+      ) {
+        parts.push(print(child), " ");
+      } else if (!isComment(child.node)) {
+        parts.push("[", print(child), "]");
+      }
+    }, "namedChildren");
+
+    return parts;
+  },
+
+  class_literal(path, print) {
+    const unannotatedTypeIndex = path.node.namedChildren.findIndex(
+      child => !isComment(child)
+    );
+    return [path.call(print, "namedChildren", unannotatedTypeIndex), ".class"];
+  },
+
+  array_access(path, print) {
+    return [
+      path.call(print, "arrayNode"),
+      "[",
+      path.call(print, "indexNode"),
+      "]"
+    ];
+  },
+
+  method_reference(path, print) {
+    const reference: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        reference.push(print(child));
+      }
+    }, "children");
+
     return reference;
   },
 
-  templateArgument: printSingle,
-  template: printSingle,
-
-  stringTemplate(path, print) {
-    return printTemplate(
-      path,
-      print,
-      "StringTemplateBegin",
-      "StringTemplateMid",
-      "StringTemplateEnd"
+  pattern(path, print) {
+    const patternIndex = path.node.namedChildren.findIndex(
+      ({ type }) =>
+        type === SyntaxType.TypePattern || type === SyntaxType.RecordPattern
     );
+    return path.call(print, "namedChildren", patternIndex);
   },
 
-  textBlockTemplate(path, print) {
-    return printTemplate(
-      path,
-      print,
-      "TextBlockTemplateBegin",
-      "TextBlockTemplateMid",
-      "TextBlockTemplateEnd"
-    );
-  },
+  type_pattern(path, print) {
+    const parts: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        parts.push(print(child));
+      }
+    }, "children");
 
-  embeddedExpression: printSingle,
-  pattern: printSingle,
-  typePattern: printSingle,
+    return join(" ", parts);
+  },
 
   recordPattern(path, print) {
     const patterns = path.node.children.componentPatternList
@@ -650,12 +638,14 @@ export default {
   matchAllPattern: printSingle,
 
   guard(path, print) {
-    const expression = call(path, print, "expression");
+    const expressionIndex = path.node.namedChildren.findIndex(
+      child => !isComment(child)
+    );
     const hasParentheses =
-      path.node.children.expression[0].children.conditionalExpression?.[0]
-        .children.binaryExpression[0].children.unaryExpression[0].children
-        .primary[0].children.primaryPrefix[0].children.parenthesisExpression !==
-      undefined;
+      path.node.namedChildren[expressionIndex].type ===
+      SyntaxType.ParenthesizedExpression;
+    const expression = path.call(print, "namedChildren", expressionIndex);
+
     return [
       "when ",
       hasParentheses

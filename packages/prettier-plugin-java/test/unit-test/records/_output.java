@@ -1,19 +1,20 @@
-public record Pet(@NotNull String name) {}
+public record Pet(@NotNull
+String name) {}
 
-public record Pet(@NotNull String name, int age) {}
+public record Pet(@NotNull
+String name,
+int age) {}
 
-public record Pet(
-  @NotNull String name,
-  int age,
-  String... others,
-  Object @Nullable... errorMessageArgs
-) {
+public record Pet(@NotNull
+String name,
+int age,
+String others... others,
+, Object @Nullable... errorMessageArgs) {
   public Pet {
-    if (age < 0) {
+    if (() {
       throw new IllegalArgumentException("Age cannot be negative");
     }
-
-    if (name == null || name.isBlank()) {
+    if (() {
       throw new IllegalArgumentException("Name cannot be blank");
     }
   }
@@ -21,12 +22,11 @@ public record Pet(
   public void test() {}
 }
 
-public record Pet(
-  @NotNull String name,
-  int age,
-  String... others,
-  Object @Nullable... errorMessageArgs
-) {}
+public record Pet(@NotNull
+String name,
+int age,
+String others... others,
+, Object @Nullable... errorMessageArgs) {}
 
 public record Pet() {}
 
@@ -35,7 +35,6 @@ public record Pet() {
 }
 
 class T {
-
   String record = "1";
 
   void t() {
@@ -43,14 +42,12 @@ class T {
   }
 
   class MyRecordSimplifiedConstructor {
-
     record MyRecord(String name, int age) {
       public MyRecord {
-        if (age < 0) {
+        if (() {
           throw new IllegalArgumentException("Age cannot be negative");
         }
-
-        if (name == null || name.isBlank()) {
+        if (() {
           throw new IllegalArgumentException("Name cannot be blank");
         }
       }
@@ -58,13 +55,13 @@ class T {
   }
 
   class MyRecordConstructor {
-
     record MyRecord(String name, int age) {
-      public MyRecord(String name, int age) {
-        if (age < 0) {
+      public MyRecord(String name,
+      int age) {
+        if (() {
           throw new IllegalArgumentException("Age cannot be negative");
         }
-        if (name == null || name.isBlank()) {
+        if (() {
           throw new IllegalArgumentException("Name cannot be blank");
         }
       }
@@ -72,16 +69,14 @@ class T {
   }
 
   public class MyRecordWithAnnotationAndModifiers {
-
     public record MyRecord(String name, int age) {
       @Annotation
       @Annotation2
       public MyRecord {
-        if (age < 0) {
+        if (() {
           throw new IllegalArgumentException("Age cannot be negative");
         }
-
-        if (name == null || name.isBlank()) {
+        if (() {
           throw new IllegalArgumentException("Name cannot be blank");
         }
       }
@@ -90,20 +85,18 @@ class T {
 }
 
 class MySplitRecordConstructor {
-
-  record MyRecord(
-    String name,
-    int age,
-    String name,
-    int age,
-    String name,
-    int age
-  ) {
-    public MyRecord(String name, int age) {
-      if (age < 0) {
+  record MyRecord(String name,
+  int age,
+  String name,
+  int age,
+  String name,
+  int age) {
+    public MyRecord(String name,
+    int age) {
+      if (() {
         throw new IllegalArgumentException("Age cannot be negative");
       }
-      if (name == null || name.isBlank()) {
+      if (() {
         throw new IllegalArgumentException("Name cannot be blank");
       }
     }
@@ -115,97 +108,60 @@ public interface MyInterface {
 }
 
 public interface MyInterface {
-  record MySplitRecord(
-    String param,
-    String param,
-    String param,
-    String param,
-    String param,
-    String param
-  ) implements MyInterface {}
+  record MySplitRecord(String param,
+  String param,
+  String param,
+  String param,
+  String param,
+  String param) implements MyInterface {}
 }
 
-public record Record(
-  @JsonSerialize(
-    using = StatusSerializer.class,
-    nullsUsing = NullSerializer.class
-  )
-  @Schema(type = "integer", description = "Some fancy description")
-  Status status,
+public record Record(@JsonSerialize(
+  using = StatusSerializer.class,
+  nullsUsing = NullSerializer.class
+)
+@Schema(type = "integer", description = "Some fancy description")
+Status status,
+@NotNull
+Integer number,
+Integer anotherNumber) {}
 
-  @NotNull Integer number,
+public record Record(@JsonSerialize(
+  using = StatusSerializer.class,
+  nullsUsing = NullSerializer.class
+)
+@Schema(type = "integer", description = "Some fancy description")
+// comment
+Status status,
+// comment
+@NotNull
+Integer number) {}
 
-  Integer anotherNumber
-) {}
+public record Record(@Schema(
+  type = "integer",
+  description = "A small description "
+)
+Status status,
+@Schema(type = "integer", description = "A longer description  ")
+Status status) {}
 
-public record Record(
-  @JsonSerialize(
-    using = StatusSerializer.class,
-    nullsUsing = NullSerializer.class
-  )
-  @Schema(type = "integer", description = "Some fancy description")
-  // comment
-  Status status,
-
-  // comment
-  @NotNull Integer number
-) {}
-
-public record Record(
-  @Schema(type = "integer", description = "A small description ") Status status,
-
-  @Schema(type = "integer", description = "A longer description  ")
-  Status status
-) {}
-
-record Aaaaaaaaaa<Bbbbbbbbbb>(Cccccccccc cccccccccc) implements Dddddddddd {
+record Aaaaaaaaaa(Cccccccccc cccccccccc) implements Dddddddddd {
   void a() {}
 }
 
-record Aaaaaaaaaa<Bbbbbbbbbb, Cccccccccc>(
-  Dddddddddd dddddddddd
-) implements Eeeeeeeeee {
+record Aaaaaaaaaa(Dddddddddd dddddddddd) implements Eeeeeeeeee {
   void a() {}
 }
 
-record Aaaaaaaaaa<Bbbbbbbbbb, Cccccccccc>(
-  Dddddddddd dddddddddd
-) implements Eeeeeeeeee {}
+record Aaaaaaaaaa(Dddddddddd dddddddddd) implements Eeeeeeeeee {}
 
-record Aaaaaaaaaa<
-  Bbbbbbbbbb,
-  Cccccccccc,
-  Dddddddddd,
-  Eeeeeeeeee,
-  Ffffffffff,
-  Gggggggggg
->(
-  Hhhhhhhhhh Hhhhhhhhhh
-) implements Iiiiiiiiii {
+record Aaaaaaaaaa(Hhhhhhhhhh Hhhhhhhhhh) implements Iiiiiiiiii {
   void a() {}
 }
 
-record Aaaaaaaaaa<
-  Bbbbbbbbbb,
-  Cccccccccc,
-  Dddddddddd,
-  Eeeeeeeeee,
-  Ffffffffff,
-  Gggggggggg
->(
-  Hhhhhhhhhh Hhhhhhhhhh
-) implements Iiiiiiiiii {}
+record Aaaaaaaaaa(Hhhhhhhhhh Hhhhhhhhhh) implements Iiiiiiiiii {}
 
-record Aaaaaaaaaa<
-  Bbbbbbbbbb,
-  Cccccccccc,
-  Dddddddddd,
-  Eeeeeeeeee,
-  Ffffffffff,
-  Gggggggggg
->(
-  Hhhhhhhhhh Hhhhhhhhhh
-) implements
+record Aaaaaaaaaa(Hhhhhhhhhh Hhhhhhhhhh) implements
   Iiiiiiiiii,
   Jjjjjjjjjj,
   Kkkkkkkkkk,

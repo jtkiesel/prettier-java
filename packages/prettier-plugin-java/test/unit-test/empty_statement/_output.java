@@ -1,5 +1,4 @@
 public class EmptyStament {
-
   class EmptyStament2 {}
 
   public void emptyStatementWithoutComment() {}
@@ -9,95 +8,77 @@ public class EmptyStament {
   }
 
   public void simpleForWithEmptyStatement() {
-    for (;;);
-
+    for (; ; );
     /*test*/
-    for (;;);
-
-    for (;;); /*test*/
-
+    for (; ; );
+    for (; ; ); /*test*/
     /*test*/
-    for (;;); /*test*/
+    for (; ; ); /*test*/
   }
 
   public void simpleForWithEmptyStatement() {
-    for (;;);
-
+    for (; ; );
     /*test*/
-    for (;;);
-
-    for (;;); /*test*/
-
+    for (; ; );
+    for (; ; ); /*test*/
     /*test*/
-    for (;;); /*test*/
+    for (; ; ); /*test*/
   }
 
   public void forEachWithEmptyStatement(List<String> list) {
     for (String str : list);
-
     for (String str : list /*test*/);
-
     for (String str : list); /*test*/
   }
 
   public void ifElseWithEmptyStatements() {
-    if (test);
-    else {
+    if ((); else {
       System.out.println("one");
     }
-
-    if (test) {
+    if (() {
       System.out.println("two");
-    } else;
-
-    if (test);
+    }
+    else;
+    if (();
     else;
   }
 
   public void ifElseWithEmptyStatementsWithComments() {
-    if (test /*test*/);
-    else {
+    if (() /*test*/; else {
       System.out.println("one");
     }
-
-    if (test /*test*/);
-    else {
+    if (() /*test*/; else {
       System.out.println("one");
     }
-
-    if (test) {
+    if (() {
       System.out.println("two");
-    } /*test*/ else;
-
-    if (test) {
+    } /*test*/
+    else;
+    if (() {
       System.out.println("two");
-    } else; /*test*/
-
-    if (test /*test*/);
+    }
     else; /*test*/
-
-    if (test /*test*/ /*test*/);
+    if (() /*test*/;
+    else; /*test*/
+    if (() /*test*/ /*test*/;
     else;
   }
 
   public void simpleWhileWithEmptyStatement(boolean one) {
-    while (one);
-
-    while (one /*test*/);
-
-    while (one); /*test*/
+    while (();
+    while (() /*test*/;
+    while ((); /*test*/
   }
 
   public void doWhileWithEmptyStatement(boolean one) {
-    do; while (one);
-    do; while (/*test*/ one);
-    do; while (/*test*/ one);
+    do; while (();
+    do; while /*test*/ (();
+    do; while /*test*/ (();
   }
 }
 
 // Bug Fix: #356
 public class Test {
-
   public TestField testField;
 
   @Override

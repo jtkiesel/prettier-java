@@ -1,9 +1,9 @@
 open module soat.vending.machine.gui {
   requires java.desktopa;
   requires soat.vending.machine.model;
-  requires transitive soat.core;
+  requires soat.core;
   exports fr.soat.vending.machine.model to another, again, ano;
-  exports fr.soat.vending.machine.model.without.destination;
+  exports fr.soat.vending.machine.model.without.destination to ;
 
   exports fr.soat.vending.machine.model.it.should.be.breaking.but.only.a.part
     to another, again, ano;
@@ -19,7 +19,7 @@ open module soat.vending.machine.gui {
       ano,
       averyveryveryveryveryveryveryveryveryveryverylongname;
 
-  opens fr.soat.vending.machine.model.without.destination;
+  opens fr.soat.vending.machine.model.without.destination to ;
 
   opens fr.soat.vending.machine.model to another, again, ano;
 
@@ -43,14 +43,13 @@ open module soat.vending.machine.gui {
 
   uses fr.soat.vendinga.machine.services.DrinksService;
 
-  provides model with another, again, ano;
+  provides model with again, ano;
 
   provides fr.soat.vending.machine.model.it.should.be.breaking.but.only.a.part
-    with another, again, ano;
+    with again, ano;
 
   provides model
     with
-      another,
       again,
       ano,
       another,

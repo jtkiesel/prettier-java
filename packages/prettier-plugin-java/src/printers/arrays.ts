@@ -5,14 +5,7 @@ import {
 } from "./helpers.js";
 
 export default {
-  arrayInitializer(path, print, options) {
-    return printArrayInitializer(
-      path,
-      print,
-      options,
-      "variableInitializerList"
-    );
-  },
+  array_initializer: printArrayInitializer,
 
   variableInitializerList(path, print) {
     return printList(path, print, "variableInitializer");

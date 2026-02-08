@@ -1,43 +1,40 @@
-import type { IToken } from "java-parser";
 import { util, type AstPath } from "prettier";
 import parser from "./parser.js";
+import type { JavaNode, JavaParserOptions } from "./printers/helpers.js";
 import {
-  isEmptyStatement,
-  isNonTerminal,
-  isTerminal,
-  type JavaNode,
-  type JavaNonTerminal,
-  type JavaParserOptions
-} from "./printers/helpers.js";
+  SyntaxType,
+  type BlockCommentNode,
+  type LineCommentNode
+} from "./tree-sitter-java.js";
 
-const prettierIgnoreRangesByCst = new WeakMap<
+const prettierIgnoreRangesByTree = new WeakMap<
   JavaNode,
   PrettierIgnoreRange[]
 >();
 
-export function determinePrettierIgnoreRanges(cst: JavaNonTerminal) {
-  const { comments } = cst;
+export function determinePrettierIgnoreRanges(tree: JavaNode) {
+  const { comments } = tree;
   if (!comments) {
     return;
   }
   const ranges = comments
-    .filter(({ image }) =>
+    .filter(({ text }) =>
       /^\/(?:\/\s*(?:prettier-ignore-(?:start|end)|@formatter:(?:off|on))\s*|\*\s*(?:prettier-ignore-(?:start|end)|@formatter:(?:off|on))\s*\*\/)$/.test(
-        image
+        text
       )
     )
-    .reduce((ranges, { image, startOffset }) => {
+    .reduce((ranges, { text, startPosition }) => {
       const previous = ranges.at(-1);
-      if (image.includes("start") || image.includes("off")) {
+      if (text.includes("start") || text.includes("off")) {
         if (previous?.end !== Infinity) {
-          ranges.push({ start: startOffset, end: Infinity });
+          ranges.push({ start: startPosition.row, end: Infinity });
         }
       } else if (previous?.end === Infinity) {
-        previous.end = startOffset;
+        previous.end = startPosition.row;
       }
       return ranges;
     }, new Array<PrettierIgnoreRange>());
-  prettierIgnoreRangesByCst.set(cst, ranges);
+  prettierIgnoreRangesByTree.set(tree, ranges);
 }
 
 export function isFullyBetweenPrettierIgnore(path: AstPath<JavaNode>) {
@@ -45,22 +42,34 @@ export function isFullyBetweenPrettierIgnore(path: AstPath<JavaNode>) {
   const start = parser.locStart(node);
   const end = parser.locEnd(node);
   return (
-    prettierIgnoreRangesByCst
+    prettierIgnoreRangesByTree
       .get(root)
       ?.some(range => range.start < start && end < range.end) === true
   );
 }
 
+export function isComment(node: JavaNode) {
+  return (
+    node.type === SyntaxType.BlockComment ||
+    node.type === SyntaxType.LineComment
+  );
+}
+
 export function canAttachComment(node: JavaNode) {
-  if (isTerminal(node)) {
-    const { name, CATEGORIES } = node.tokenType;
-    return (
-      name === "Identifier" ||
-      CATEGORIES?.find(({ name }) => name === "BinaryOperator") !== undefined
-    );
+  if (!node.isNamed) {
+    return isBinaryOperator(node);
   }
-  const { children, name } = node;
-  switch (name) {
+  switch (node.type) {
+    case SyntaxType.ArgumentList:
+    case SyntaxType.BlockComment:
+    case SyntaxType.EnumBodyDeclarations:
+    case SyntaxType.LineComment:
+    case SyntaxType.Program:
+      return false;
+    default:
+      return true;
+  }
+  /*switch (name) {
     case "argumentList":
     case "blockStatements":
     case "emptyStatement":
@@ -84,7 +93,7 @@ export function canAttachComment(node: JavaNode) {
       return !children.emptyStatement;
     default:
       return true;
-  }
+  }*/
 }
 
 export function handleLineComment(
@@ -94,20 +103,20 @@ export function handleLineComment(
 ) {
   return [
     handleBinaryExpressionComments,
-    handleConditionalExpressionComments,
+    handleTernaryExpressionComments,
     handleFqnOrRefTypeComments,
     handleIfStatementComments,
     handleJumpStatementComments,
     handleLabeledStatementComments,
-    handleNameComments,
-    handleTryStatementComments
+    handleNameComments
+    //handleTryStatementComments
   ].some(fn => fn(commentNode, options));
 }
 
 export function handleRemainingComment(commentNode: JavaComment) {
   return [
     handleFqnOrRefTypeComments,
-    handleMethodDeclaratorComments,
+    //handleMethodDeclaratorComments,
     handleNameComments,
     handleJumpStatementComments
   ].some(fn => fn(commentNode));
@@ -118,7 +127,7 @@ function handleBinaryExpressionComments(
   options: JavaParserOptions
 ) {
   const { enclosingNode, precedingNode, followingNode } = commentNode;
-  if (enclosingNode?.name === "binaryExpression") {
+  if (enclosingNode?.type === SyntaxType.BinaryExpression) {
     if (isBinaryOperator(followingNode)) {
       if (options.experimentalOperatorPosition === "start") {
         util.addLeadingComment(followingNode, commentNode);
@@ -137,17 +146,14 @@ function handleBinaryExpressionComments(
   return false;
 }
 
-function handleConditionalExpressionComments(commentNode: JavaComment) {
-  const { startLine, endLine, enclosingNode, precedingNode, followingNode } =
-    commentNode;
+function handleTernaryExpressionComments(commentNode: JavaComment) {
+  const { enclosingNode, precedingNode, followingNode } = commentNode;
   if (
-    enclosingNode?.name === "conditionalExpression" &&
-    precedingNode &&
-    followingNode &&
-    isNonTerminal(precedingNode) &&
-    isNonTerminal(followingNode) &&
-    precedingNode.location.endLine < startLine &&
-    endLine < followingNode.location.startLine
+    enclosingNode?.type === SyntaxType.TernaryExpression &&
+    precedingNode?.isNamed &&
+    followingNode?.isNamed &&
+    precedingNode.endPosition.row < commentNode.startPosition.row &&
+    commentNode.endPosition.row < followingNode.startPosition.row
   ) {
     util.addLeadingComment(followingNode, commentNode);
     return true;
@@ -157,7 +163,10 @@ function handleConditionalExpressionComments(commentNode: JavaComment) {
 
 function handleFqnOrRefTypeComments(commentNode: JavaComment) {
   const { enclosingNode, followingNode } = commentNode;
-  if (enclosingNode?.name === "fqnOrRefType" && followingNode) {
+  if (
+    enclosingNode?.type === SyntaxType.ScopedTypeIdentifier &&
+    followingNode
+  ) {
     util.addLeadingComment(followingNode, commentNode);
     return true;
   }
@@ -167,10 +176,8 @@ function handleFqnOrRefTypeComments(commentNode: JavaComment) {
 function handleIfStatementComments(commentNode: JavaComment) {
   const { enclosingNode, precedingNode } = commentNode;
   if (
-    enclosingNode?.name === "ifStatement" &&
-    precedingNode &&
-    isNonTerminal(precedingNode) &&
-    precedingNode.name === "statement"
+    enclosingNode?.type === SyntaxType.IfStatement &&
+    precedingNode?.grammarType === "statement"
   ) {
     util.addDanglingComment(enclosingNode, commentNode, undefined);
     return true;
@@ -184,9 +191,9 @@ function handleJumpStatementComments(commentNode: JavaComment) {
     enclosingNode &&
     !precedingNode &&
     !followingNode &&
-    ["breakStatement", "continueStatement", "returnStatement"].includes(
-      enclosingNode.name
-    )
+    (enclosingNode.type === SyntaxType.BreakStatement ||
+      enclosingNode.type === SyntaxType.ContinueStatement ||
+      enclosingNode.type === SyntaxType.ReturnStatement)
   ) {
     util.addTrailingComment(enclosingNode, commentNode);
     return true;
@@ -197,10 +204,8 @@ function handleJumpStatementComments(commentNode: JavaComment) {
 function handleLabeledStatementComments(commentNode: JavaComment) {
   const { enclosingNode, precedingNode } = commentNode;
   if (
-    enclosingNode?.name === "labeledStatement" &&
-    precedingNode &&
-    isTerminal(precedingNode) &&
-    precedingNode.tokenType.name === "Identifier"
+    enclosingNode?.type === SyntaxType.LabeledStatement &&
+    precedingNode?.type === SyntaxType.Identifier
   ) {
     util.addLeadingComment(precedingNode, commentNode);
     return true;
@@ -208,7 +213,7 @@ function handleLabeledStatementComments(commentNode: JavaComment) {
   return false;
 }
 
-function handleMethodDeclaratorComments(commentNode: JavaComment) {
+/*function handleMethodDeclaratorComments(commentNode: JavaComment) {
   const { enclosingNode } = commentNode;
   if (
     enclosingNode?.name === "methodDeclarator" &&
@@ -221,26 +226,17 @@ function handleMethodDeclaratorComments(commentNode: JavaComment) {
     return true;
   }
   return false;
-}
+}*/
 
 function handleNameComments(commentNode: JavaComment) {
   const { enclosingNode, precedingNode } = commentNode;
   if (
     enclosingNode &&
-    precedingNode &&
-    isTerminal(precedingNode) &&
-    precedingNode.tokenType.name === "Identifier" &&
-    [
-      "ambiguousName",
-      "classOrInterfaceTypeToInstantiate",
-      "expressionName",
-      "moduleDeclaration",
-      "moduleName",
-      "packageDeclaration",
-      "packageName",
-      "packageOrTypeName",
-      "typeName"
-    ].includes(enclosingNode.name)
+    precedingNode?.type === SyntaxType.Identifier &&
+    (enclosingNode.type === SyntaxType.ScopedIdentifier ||
+      enclosingNode.type === SyntaxType.ModuleDeclaration ||
+      enclosingNode.type === SyntaxType.PackageDeclaration ||
+      enclosingNode.type === SyntaxType.ScopedTypeIdentifier)
   ) {
     util.addTrailingComment(precedingNode, commentNode);
     return true;
@@ -248,7 +244,7 @@ function handleNameComments(commentNode: JavaComment) {
   return false;
 }
 
-function handleTryStatementComments(commentNode: JavaComment) {
+/*function handleTryStatementComments(commentNode: JavaComment) {
   const { enclosingNode, followingNode } = commentNode;
   if (
     enclosingNode &&
@@ -277,25 +273,39 @@ function handleTryStatementComments(commentNode: JavaComment) {
     return true;
   }
   return false;
-}
+}*/
 
 function isBinaryOperator(node?: JavaNode) {
   return (
     node !== undefined &&
-    (isNonTerminal(node)
-      ? node.name === "shiftOperator"
-      : node.tokenType.CATEGORIES?.some(
-          ({ name }) => name === "BinaryOperator"
-        ))
+    (node.type === "<<" ||
+      node.type === ">>" ||
+      node.type === ">>>" ||
+      node.type === "instanceof" ||
+      node.type === "<=" ||
+      node.type === ">=" ||
+      node.type === "==" ||
+      node.type === "=" ||
+      node.type === "-" ||
+      node.type === "+" ||
+      node.type === "&&" ||
+      node.type === "&" ||
+      node.type === "^" ||
+      node.type === "!=" ||
+      node.type === "||" ||
+      node.type === "|" ||
+      node.type === "*" ||
+      node.type === "/" ||
+      node.type === "%")
   );
 }
 
-export type JavaComment = IToken & {
+export type JavaComment = (BlockCommentNode | LineCommentNode) & {
   value: string;
   leading: boolean;
   trailing: boolean;
   printed: boolean;
-  enclosingNode?: JavaNonTerminal;
+  enclosingNode?: JavaNode;
   precedingNode?: JavaNode;
   followingNode?: JavaNode;
 };

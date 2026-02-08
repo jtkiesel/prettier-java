@@ -1,19 +1,20 @@
-import type {
-  ExportsModuleDirectiveCstNode,
-  ImportDeclarationCstNode,
-  IToken,
-  OpensModuleDirectiveCstNode
-} from "java-parser";
+import type { ImportDeclarationCstNode, IToken } from "java-parser";
 import type { AstPath, Doc } from "prettier";
 import { builders } from "prettier/doc";
+import { isComment } from "../comments.js";
+import {
+  ExportsModuleDirectiveNode,
+  OpensModuleDirectiveNode,
+  SyntaxType
+} from "../tree-sitter-java.js";
 import {
   call,
+  hasChild,
   lineEndWithComments,
   lineStartWithComments,
   map,
   printBlock,
   printDanglingComments,
-  printName,
   printSingle,
   type JavaNodePrinters,
   type JavaPrintFn
@@ -22,8 +23,18 @@ import {
 const { group, hardline, indent, join, line } = builders;
 
 export default {
-  compilationUnit(path, print) {
-    return [...printDanglingComments(path), printSingle(path, print), hardline];
+  program(path, print) {
+    const children: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        children.push(print(child));
+      }
+    }, "children");
+    return [
+      ...printDanglingComments(path),
+      join([hardline, hardline], children),
+      hardline
+    ];
   },
 
   ordinaryCompilationUnit(path, print) {
@@ -75,29 +86,44 @@ export default {
     return join([hardline, hardline], declarations);
   },
 
-  packageDeclaration(path, print) {
-    return join(hardline, [
-      ...map(path, print, "packageModifier"),
-      ["package ", printName(path, print), ";"]
-    ]);
+  package_declaration(path, print) {
+    const annotations: Doc[] = [];
+    const identifier: Doc[] = [];
+    path.each(child => {
+      switch (child.node.type) {
+        case SyntaxType.Annotation:
+        case SyntaxType.MarkerAnnotation:
+          annotations.push(print(child));
+          break;
+        case SyntaxType.Identifier:
+        case SyntaxType.ScopedIdentifier:
+          identifier.push(print(child));
+          break;
+      }
+    }, "namedChildren");
+    return join(hardline, [...annotations, ["package ", ...identifier, ";"]]);
   },
 
-  packageModifier: printSingle,
-
-  importDeclaration(path, print) {
-    const { children } = path.node;
-    if (children.emptyStatement) {
-      return call(path, print, "emptyStatement");
-    }
+  import_declaration(path, print) {
     const declaration: Doc[] = ["import "];
-    if (children.Static) {
+
+    if (path.node.children.some(({ type }) => type === "static")) {
       declaration.push("static ");
     }
-    declaration.push(call(path, print, "packageOrTypeName"));
-    if (children.Star) {
+
+    const identifierIndex = path.node.namedChildren.findIndex(
+      ({ type }) =>
+        type === SyntaxType.Identifier || type === SyntaxType.ScopedIdentifier
+    );
+    declaration.push(path.call(print, "namedChildren", identifierIndex));
+
+    if (
+      path.node.namedChildren.some(({ type }) => type === SyntaxType.Asterisk)
+    ) {
       declaration.push(".*");
     }
     declaration.push(";");
+
     return declaration;
   },
 
@@ -105,73 +131,91 @@ export default {
     return path.node.children.Semicolon ? "" : printSingle(path, print);
   },
 
-  moduleDeclaration(path, print) {
-    const { annotation, Open } = path.node.children;
-    const prefix: Doc[] = [];
-    if (annotation) {
-      prefix.push(...map(path, print, "annotation"));
+  module_declaration(path, print) {
+    const parts: Doc[] = [];
+
+    path.each(child => {
+      if (
+        child.node.type === SyntaxType.Annotation ||
+        child.node.type === SyntaxType.MarkerAnnotation
+      ) {
+        parts.push(print(child));
+      }
+    }, "namedChildren");
+
+    if (path.node.children.some(({ type }) => type === "open")) {
+      parts.push("open");
     }
-    if (Open) {
-      prefix.push("open");
-    }
-    const declarations = map(
-      path,
-      declarationPath => {
-        const declaration = print(declarationPath);
-        const { node, previous } = declarationPath;
-        return !previous ||
-          lineStartWithComments(node) <= lineEndWithComments(previous) + 1
-          ? declaration
-          : [hardline, declaration];
-      },
-      "moduleDirective"
-    );
-    return join(" ", [
-      ...prefix,
+
+    parts.push(
       "module",
-      printName(path, print),
-      printBlock(path, declarations)
-    ]);
+      path.call(print, "nameNode"),
+      path.call(print, "bodyNode")
+    );
+
+    return join(" ", parts);
+  },
+
+  module_body(path, print) {
+    const moduleDirectives: Doc[] = [];
+    path.each(child => {
+      const { node, previous } = child;
+      if (isComment(node)) {
+        return;
+      }
+
+      const directive = print(child);
+      moduleDirectives.push(
+        previous &&
+          lineStartWithComments(node) > lineEndWithComments(previous) + 1
+          ? [hardline, directive]
+          : directive
+      );
+    }, "namedChildren");
+
+    return printBlock(path, moduleDirectives);
   },
 
   moduleDirective: printSingle,
 
-  requiresModuleDirective(path, print) {
-    return join(" ", [
-      "requires",
-      ...map(path, print, "requiresModifier"),
-      [call(path, print, "moduleName"), ";"]
-    ]);
+  requires_module_directive(path, print) {
+    const parts: Doc[] = ["requires"];
+
+    path.each(child => {
+      if (
+        child.node.type === SyntaxType.Annotation ||
+        child.node.type === SyntaxType.MarkerAnnotation
+      ) {
+        parts.push(print(child));
+      }
+    }, "namedChildren");
+
+    parts.push(path.call(print, "moduleNode"));
+
+    return [...join(" ", parts), ";"];
   },
 
-  exportsModuleDirective(path, print) {
-    return printToModuleNamesDirective(path, print, "exports");
+  exports_module_directive: printToModuleNamesDirective,
+  opens_module_directive: printToModuleNamesDirective,
+
+  uses_module_directive(path, print) {
+    return ["uses ", path.call(print, "typeNode"), ";"];
   },
 
-  opensModuleDirective(path, print) {
-    return printToModuleNamesDirective(path, print, "opens");
-  },
-
-  usesModuleDirective(path, print) {
-    return ["uses ", call(path, print, "typeName"), ";"];
-  },
-
-  providesModuleDirective(path, print) {
-    const [firstTypeName, ...restTypeNames] = map(path, print, "typeName");
+  provides_module_directive(path, print) {
+    const providers = path.map(print, "providerNodes");
     return [
       "provides ",
-      firstTypeName,
+      path.call(print, "providedNode"),
       group(
         indent([
           line,
-          group(indent(["with", line, ...join([",", line], restTypeNames)]))
+          group(indent(["with", line, ...join([",", line], providers)]))
         ])
       ),
       ";"
     ];
-  },
-
-  requiresModifier: printSingle
+  }
 } satisfies Partial<JavaNodePrinters>;
 
 function sortImports(importDeclarations: ImportDeclarationCstNode[]) {
@@ -221,13 +265,14 @@ function compareFqn(
 }
 
 function printToModuleNamesDirective(
-  path: AstPath<ExportsModuleDirectiveCstNode | OpensModuleDirectiveCstNode>,
-  print: JavaPrintFn,
-  prefix: string
+  path: AstPath<ExportsModuleDirectiveNode | OpensModuleDirectiveNode>,
+  print: JavaPrintFn
 ) {
-  const directive = [prefix, " ", call(path, print, "packageName")];
-  if (path.node.children.moduleName) {
-    const moduleNames = join([",", line], map(path, print, "moduleName"));
+  const prefix =
+    path.node.type === SyntaxType.ExportsModuleDirective ? "exports" : "opens";
+  const directive = [prefix, " ", path.call(print, "packageNode")];
+  if (hasChild(path, "modulesNodes")) {
+    const moduleNames = join([",", line], path.map(print, "modulesNodes"));
     directive.push(
       group(indent([line, group(indent(["to", line, ...moduleNames]))]))
     );

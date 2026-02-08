@@ -1,14 +1,44 @@
-import static abc.def;
-import static abc.def.Another;
-import static abc.def.Something;
-import static java.utils.*;
-import static something.Different;
-
-import abc.def;
-import abc.def.Another;
-import abc.def.Something;
-import java.utils.*;
-import one.last;
 import something.Different;
 
-module my.module {}
+import java.utils.*;
+
+;
+
+;
+
+import abc.def.Something;
+
+import abc.def.Another;
+
+;
+
+;
+
+import abc.def;
+
+import static abc.def;
+
+import static something.Different;
+
+import static java.utils.*;
+
+;
+
+;
+
+import static abc.def.Something;
+
+import static abc.def.Another;
+
+;
+
+;
+
+import one.last;
+
+;
+
+;
+
+module my.module {
+}

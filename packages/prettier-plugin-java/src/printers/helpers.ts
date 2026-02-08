@@ -12,10 +12,30 @@ import type {
 } from "java-parser";
 import type { AstPath, Doc, ParserOptions } from "prettier";
 import { builders } from "prettier/doc";
-import type { JavaComment } from "../comments.js";
+import { isComment, JavaComment } from "../comments.js";
 import parser from "../parser.js";
+import {
+  ArrayInitializerNode,
+  ClassBodyNode,
+  ConstantDeclarationNode,
+  ElementValueArrayInitializerNode,
+  EnumBodyDeclarationsNode,
+  FieldDeclarationNode,
+  InterfaceBodyNode,
+  LocalVariableDeclarationNode,
+  type NamedNode,
+  type SyntaxNode,
+  SyntaxType
+} from "../tree-sitter-java.js";
 
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
+
+export function hasChild<T, K extends keyof T>(
+  path: AstPath<T>,
+  fieldName: K
+): path is AstPath<T & { [P in K]-?: NonNullable<T[P]> }> {
+  return path.node[fieldName] != null;
+}
 
 export function onlyDefinedKey<
   T extends Record<string, any>,
@@ -40,23 +60,6 @@ export function definedKeys<
     key => obj[key] !== undefined
   );
 }
-
-const indexByModifier = [
-  "public",
-  "protected",
-  "private",
-  "abstract",
-  "default",
-  "static",
-  "final",
-  "transient",
-  "volatile",
-  "synchronized",
-  "native",
-  "sealed",
-  "non-sealed",
-  "strictfp"
-].reduce((map, name, index) => map.set(name, index), new Map<string, number>());
 
 export function printWithModifiers<
   T extends CstNode,
@@ -154,7 +157,7 @@ export function map<
 }
 
 export function flatMap<
-  T extends CstNode,
+  T extends SyntaxNode,
   U,
   P extends IterProperties<T["children"]>
 >(
@@ -189,21 +192,23 @@ export function printSingle(
   );
 }
 
-export function lineStartWithComments(node: JavaNonTerminal) {
-  const { comments, location } = node;
+export function lineStartWithComments(node: SyntaxNode) {
+  /*const { comments, location } = node;
   return comments
     ? Math.min(location.startLine, comments[0].startLine)
-    : location.startLine;
+    : location.startLine;*/
+  return node.startPosition.row;
 }
 
-export function lineEndWithComments(node: JavaNonTerminal) {
-  const { comments, location } = node;
+export function lineEndWithComments(node: SyntaxNode) {
+  /*const { comments, location } = node;
   return comments
     ? Math.max(location.endLine, comments.at(-1)!.endLine)
-    : location.endLine;
+    : location.endLine;*/
+  return node.endPosition.row;
 }
 
-export function printDanglingComments(path: AstPath<JavaNonTerminal>) {
+export function printDanglingComments(path: AstPath<JavaNode>) {
   if (!path.node.comments) {
     return [];
   }
@@ -219,9 +224,8 @@ export function printDanglingComments(path: AstPath<JavaNonTerminal>) {
   return join(hardline, comments);
 }
 
-export function printComment(node: JavaTerminal) {
-  const { image } = node;
-  const lines = image.split("\n").map(line => line.trim());
+export function printComment(node: JavaNode) {
+  const lines = node.text.split("\n").map(line => line.trim());
   return lines.length > 1 &&
     lines[0].startsWith("/*") &&
     lines.slice(1).every(line => line.startsWith("*")) &&
@@ -230,7 +234,7 @@ export function printComment(node: JavaTerminal) {
         hardline,
         lines.map((line, index) => (index === 0 ? line : ` ${line}`))
       )
-    : image;
+    : node.text;
 }
 
 export function hasLeadingComments(node: JavaNode) {
@@ -246,24 +250,38 @@ export function indentInParentheses(
     : "()";
 }
 
-export function printArrayInitializer<
-  T extends JavaNonTerminal,
-  P extends IterProperties<T["children"]>
->(path: AstPath<T>, print: JavaPrintFn, options: JavaParserOptions, child: P) {
-  if (!(child && child in path.node.children)) {
+export function printArrayInitializer(
+  path: AstPath<ArrayInitializerNode | ElementValueArrayInitializerNode>,
+  print: JavaPrintFn,
+  options: JavaParserOptions
+) {
+  if (!path.node.namedChildren.some(child => !isComment(child))) {
     const danglingComments = printDanglingComments(path);
     return danglingComments.length
       ? ["{", indent([hardline, ...danglingComments]), hardline, "}"]
       : "{}";
   }
-  const list = [call(path, print, child)];
-  if (options.trailingComma !== "none") {
-    list.push(ifBreak(","));
-  }
-  return list.length ? group(["{", indent([line, ...list]), line, "}"]) : "{}";
+
+  const list: Doc[] = [];
+  path.each(child => {
+    if (!isComment(child.node)) {
+      list.push(print(child));
+    }
+  }, "namedChildren");
+
+  const trailingComma = options.trailingComma === "none" ? [] : [ifBreak(",")];
+
+  return list.length
+    ? group([
+        "{",
+        indent([line, ...join([",", line], list), ...trailingComma]),
+        line,
+        "}"
+      ])
+    : "{}";
 }
 
-export function printBlock(path: AstPath<JavaNonTerminal>, contents: Doc[]) {
+export function printBlock(path: AstPath<NamedNode>, contents: Doc[]) {
   if (contents.length) {
     return group([
       "{",
@@ -276,38 +294,39 @@ export function printBlock(path: AstPath<JavaNonTerminal>, contents: Doc[]) {
   if (danglingComments.length) {
     return ["{", indent([hardline, ...danglingComments]), hardline, "}"];
   }
-  const parent = path.grandparent;
-  const grandparent = path.getNode(4);
-  const greatGrandparent = path.getNode(6);
-  return (grandparent?.name === "catches" &&
-    grandparent.children.catchClause.length === 1 &&
-    (greatGrandparent?.name === "tryStatement" ||
-      greatGrandparent?.name === "tryWithResourcesStatement") &&
-    !greatGrandparent.children.finally) ||
-    (greatGrandparent &&
+  const parent = path.parent;
+  const grandparent = path.grandparent;
+  return ((grandparent?.type === SyntaxType.TryStatement ||
+    grandparent?.type === SyntaxType.TryWithResourcesStatement) &&
+    grandparent.children.filter(({ type }) => type === SyntaxType.CatchClause)
+      .length === 1 &&
+    !grandparent.children.some(
+      ({ type }) => type === SyntaxType.FinallyClause
+    )) ||
+    (grandparent &&
       [
-        "basicForStatement",
-        "doStatement",
-        "enhancedForStatement",
-        "whileStatement"
-      ].includes(greatGrandparent.name)) ||
+        SyntaxType.ForStatement,
+        SyntaxType.DoStatement,
+        SyntaxType.EnhancedForStatement,
+        SyntaxType.WhileStatement
+      ].includes(grandparent.type)) ||
     [
-      "annotationInterfaceBody",
-      "classBody",
-      "constructorBody",
-      "enumBody",
-      "interfaceBody",
-      "moduleDeclaration",
-      "recordBody"
-    ].includes(path.node.name) ||
+      SyntaxType.AnnotationTypeBody,
+      SyntaxType.ClassBody,
+      SyntaxType.ConstructorBody,
+      SyntaxType.EnumBody,
+      SyntaxType.InterfaceBody,
+      SyntaxType.ModuleDeclaration,
+      SyntaxType.RecordPatternBody
+    ].includes(path.node.type) ||
     (parent &&
       [
-        "instanceInitializer",
-        "lambdaBody",
-        "methodBody",
-        "staticInitializer",
-        "synchronizedStatement"
-      ].includes(parent.name))
+        SyntaxType.Block,
+        SyntaxType.LambdaExpression,
+        SyntaxType.MethodDeclaration,
+        SyntaxType.StaticInitializer,
+        SyntaxType.SynchronizedStatement
+      ].includes(parent.type))
     ? "{}"
     : ["{", hardline, "}"];
 }
@@ -319,11 +338,12 @@ export function printName(
   return join(".", map(path, print, "Identifier"));
 }
 
-export function printList<
-  T extends JavaNonTerminal,
-  P extends IterProperties<T["children"]>
->(path: AstPath<T>, print: JavaPrintFn, child: P) {
-  return join([",", line], map(path, print, child));
+export function printList<T extends SyntaxNode, P extends IterProperties<T>>(
+  path: AstPath<T>,
+  print: JavaPrintFn,
+  child: P
+) {
+  return join([",", line], path.map(print, child));
 }
 
 export function printClassPermits(
@@ -361,6 +381,96 @@ export function printClassType(
       }
       return docs;
     });
+}
+
+export function printClassBodyDeclarations(
+  path: AstPath<ClassBodyNode | EnumBodyDeclarationsNode | InterfaceBodyNode>,
+  print: JavaPrintFn
+) {
+  const declarations: Doc[] = [];
+  let previousRequiresPadding = false;
+
+  path.each(child => {
+    const { node, previous } = child;
+    if (isComment(node) || node.type === ";") {
+      return;
+    }
+
+    const isField = node.type === SyntaxType.FieldDeclaration;
+    let hasAnnotation = false;
+    if (isField) {
+      const modifiers = node.children.find(
+        c => c.type === SyntaxType.Modifiers
+      );
+      if (modifiers) {
+        hasAnnotation = modifiers.children.some(
+          c =>
+            c.type === SyntaxType.Annotation ||
+            c.type === SyntaxType.MarkerAnnotation
+        );
+      }
+    }
+
+    const currentRequiresPadding = !isField || hasAnnotation;
+    const blankLine =
+      declarations.length > 0 &&
+      (previousRequiresPadding ||
+        currentRequiresPadding ||
+        (previous &&
+          lineStartWithComments(node) > lineEndWithComments(previous) + 1));
+
+    const declaration = print(child);
+    declarations.push(blankLine ? [hardline, declaration] : declaration);
+    previousRequiresPadding = currentRequiresPadding;
+  }, "namedChildren");
+
+  return declarations;
+}
+
+export function printExpressionList(expressions: Doc[]) {
+  return group(
+    expressions.map((expression, index) =>
+      index === 0 ? expression : [",", indent([line, expression])]
+    )
+  );
+}
+
+export function printVariableDeclaration(
+  path: AstPath<
+    | ConstantDeclarationNode
+    | FieldDeclarationNode
+    | LocalVariableDeclarationNode
+  >,
+  print: JavaPrintFn
+) {
+  const declaration: Doc[] = [];
+
+  const modifiersIndex = path.node.namedChildren.findIndex(
+    ({ type }) => type === SyntaxType.Modifiers
+  );
+  if (modifiersIndex !== -1) {
+    declaration.push(path.call(print, "namedChildren", modifiersIndex));
+  }
+
+  declaration.push(path.call(print, "typeNode"), " ");
+
+  const declarators = path.map(print, "declaratorNodes");
+
+  if (path.node.declaratorNodes.some(({ valueNode }) => valueNode)) {
+    declaration.push(
+      group(indent(join([",", line], declarators)), {
+        shouldBreak:
+          (path.grandparent as JavaNode | null)?.type !==
+          SyntaxType.ForStatement
+      })
+    );
+  } else {
+    declaration.push(join(", ", declarators));
+  }
+
+  declaration.push(";");
+
+  return declaration;
 }
 
 export function isBinaryExpression(expression: ExpressionCstNode) {
@@ -413,22 +523,20 @@ export function isTerminal(node: CstElement): node is IToken {
   return "tokenType" in node;
 }
 
-export type JavaNode = CstElement & { comments?: JavaComment[] };
-export type JavaNonTerminal = Exclude<JavaNode, IToken>;
-export type JavaTerminal = Exclude<JavaNode, CstNode>;
-export type JavaNodePrinters = {
-  [T in JavaNonTerminal["name"]]: JavaNodePrinter<T>;
+export type JavaNode<T extends SyntaxNode = SyntaxNode> = T & {
+  comments?: JavaComment[];
 };
-export type JavaNodePrinter<T> = (
-  path: AstPath<Extract<JavaNonTerminal, { name: T }>>,
-  print: JavaPrintFn,
-  options: JavaParserOptions,
+export type JavaNodePrinters = {
+  [T in SyntaxType]: JavaNodePrinter<T>;
+};
+export type JavaNodePrinter<T extends SyntaxType> = (
+  path: AstPath<JavaNode<NamedNode<T>>>,
+  print: (path: AstPath<JavaNode>, args?: unknown) => Doc,
+  options: ParserOptions<JavaNode>,
   args?: unknown
 ) => Doc;
 export type JavaPrintFn = (path: AstPath<JavaNode>, args?: unknown) => Doc;
-export type JavaParserOptions = ParserOptions<JavaNode> & {
-  entrypoint?: string;
-};
+export type JavaParserOptions = ParserOptions<JavaNode>;
 export type IterProperties<T> = T extends any[]
   ? IndexProperties<T>
   : ArrayProperties<T>;

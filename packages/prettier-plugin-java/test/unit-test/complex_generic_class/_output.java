@@ -1,5 +1,4 @@
-public class GenericClass<BEAN extends Comparable<BEAN>> {
-
+public class GenericClass {
   private BEAN bean;
 
   public GenericClass(BEAN bean) {
@@ -11,26 +10,18 @@ public class GenericClass<BEAN extends Comparable<BEAN>> {
     return bean;
   }
 
-  public <T extends Comparable<T>> T doSomething(T t) {
+  public T doSomething(T t) {
     return t;
   }
 
-  public void addAll(final Collection<? extends E> c) {
+  public void addAll(final Collection<?> c) {
     for (final E e : c) {
       add(e);
     }
   }
 }
 
-public abstract class AbstractGenericClass<
-  Value extends AbstractValue,
-  Value1 extends AbstractValue,
-  Value2 extends AbstractValue,
-  Value3 extends AbstractValue,
-  Value4 extends AbstractValue,
-  Value5 extends AbstractValue
-> {
-
+public abstract class AbstractGenericClass {
   public Value getValue() {
     return new Value();
   }

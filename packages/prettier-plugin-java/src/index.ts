@@ -2,7 +2,7 @@ import type { Plugin } from "prettier";
 import options from "./options.js";
 import parser from "./parser.js";
 import printer from "./printer.js";
-import type { JavaNode } from "./printers/helpers.js";
+import type { SyntaxNode } from "./tree-sitter-java.js";
 
 export default {
   languages: [
@@ -29,4 +29,4 @@ export default {
   defaultOptions: {
     arrowParens: "avoid"
   }
-} satisfies Plugin<JavaNode>;
+} satisfies Plugin<SyntaxNode>;

@@ -1,5 +1,4 @@
 public class TryCatch {
-
   void tryFinally() {
     try {
       System.out.println("Try something");
@@ -72,7 +71,7 @@ public class TryCatch {
   void multiResourceTryWithTrailingSemi() {
     try (
       FirstResource firstResource = new FirstResource();
-      SecondResource secondResource = new SecondResource();
+      SecondResource secondResource = new SecondResource()
     ) {
       return br.readLine();
     } catch (ArithmeticException | ArrayIndexOutOfBoundsException e) {
@@ -121,41 +120,30 @@ public class TryCatch {
 
   void lineComments() {
     try {
-    } finally {
-      // a
+    } finally { // a
     } // b
-
     try {
-    } catch (Exception b) {
-      // a
-    } catch (Exception c) {
-      // b
-    } finally {
-      // c
+    } catch (Exception b) { // a
+    } catch (Exception c) { // b
+    } finally { // c
     } // d
-
     try {
       // a1
       a;
-    } finally {
-      // a2
+    } finally { // a2
       // b1
       b;
     } // b2
-
     try {
       // a1
       a;
-    } catch (Exception b) {
-      // a2
+    } catch (Exception b) { // a2
       // b1
       b;
-    } catch (Exception c) {
-      // b2
+    } catch (Exception c) { // b2
       // c1
       c;
-    } finally {
-      // c2
+    } finally { // c2
       // d1
       d;
     } // d2

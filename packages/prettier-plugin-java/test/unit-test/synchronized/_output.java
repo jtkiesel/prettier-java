@@ -1,7 +1,6 @@
 class Synchronized {
-
   void doSomething() {
-    synchronized (this.var) {
+    synchronized (() {
       doSynchronized();
     }
   }

@@ -1,157 +1,95 @@
 public class BreakLongFunctionCall {
-
   public void doSomething() {
     return new Object().something().more();
   }
 
   public void doSomethingNewWithComment() {
-    new Object()
-      // comment
-      .something()
-      .more();
-
-    new Object()
-      .something()
-      // comment
-      .more();
+    new Object().// comment
+    something().more();
+    new Object().something().// comment
+    more();
   }
 
   public void doSomethingWithComment() {
-    Object
-      // comment
-      .something()
-      .more();
+    Object.// comment
+    something().more();
+    java.Object.// comment
+    something().more();
+    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.// comment
+    something().more();
+    java.// comment
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.something(
 
-    java.Object
-      // comment
-      .something()
-      .more();
+    ).more();
+    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.// comment
+    Object.something().more();
+    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.something(
 
-    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object
-      // comment
-      .something()
-      .more();
+    ).more();
+    Object.something().// comment
+    more();
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java.// comment
+    util().java.java();
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.// comment
+    java.util().java.java();
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java./* comment */
+    util().java.java();
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java /* comment */.util(
 
-    java// comment
-    .averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.something()
-      .more();
+    ).java.java();
+    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java./* comment */ util(
 
-    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong// comment
-    .Object.something()
-      .more();
-
-    java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.something().more();
-
-    Object.something()
-      // comment
-      .more();
-
-    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java
-      // comment
-      .util()
-      .java.java();
-
-    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong// comment
-    .java
-      .util()
-      .java.java();
-
-    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java
-      /* comment */
-      .util()
-      .java.java();
-
-    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java
-      /* comment */
-      .util()
-      .java.java();
-
-    averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java
-      /* comment */ .util()
-      .java.java();
+    ).java.java();
   }
 
   public void doSomethingWithComment() {
-    object
-      // comment
-      .something()
-      .more();
-
-    object
-      .something()
-      // comment
-      .more();
+    object.// comment
+    something().more();
+    object.something().// comment
+    more();
   }
 
   public void doSomethingNewWithComment() {
-    return new Object()
-      /* comment */
-      .something()
-      .more();
+    return new Object()./* comment */
+    something().more();
   }
 
   public void doSomethingWithComment() {
-    return Object
-      /* comment */
-      .something()
-      .more();
+    return Object./* comment */
+    something().more();
   }
 
   public void doSomethingWithComment() {
-    return object
-      /* comment */
-      .something()
-      .more();
+    return object./* comment */
+    something().more();
   }
 
   public void doSomethingLongNew() {
-    return something()
-      .more()
-      .and()
-      .that()
-      .as()
-      .well()
-      .but()
-      .not()
-      .something()
-      .something();
+    return something().more().and().that().as().well().but().not().something(
+
+    ).something();
   }
 
   public void doSomethingLongWithArgument() {
-    return something()
-      .more(firstArgument, secondArgument)
-      .and(
-        firstArgument,
-        secondArgument,
-        thirdArgument,
-        fourthArgument,
-        fifthArgument
-      );
+    return something().more(firstArgument, secondArgument).and(
+      firstArgument,
+      secondArgument,
+      thirdArgument,
+      fourthArgument,
+      fifthArgument
+    );
   }
 
   public void doSomethingLongNew2() {
-    return new Object()
-      .something()
-      .more()
-      .and()
-      .that()
-      .as()
-      .well()
-      .but()
-      .not()
-      .something();
+    return new Object().something().more().and().that().as().well().but().not(
+
+    ).something();
   }
 
   public void doSomethingLongStatic() {
-    return Object.something()
-      .more()
-      .and()
-      .that()
-      .as()
-      .well()
-      .but()
-      .not()
-      .something();
+    return Object.something().more().and().that().as().well().but().not(
+
+    ).something();
   }
 
   public void singleInvocationOnNewExpression() {
@@ -168,11 +106,9 @@ public class BreakLongFunctionCall {
     new Instance(
       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
       aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    )
-      .invocation(
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      )
-      .andAnother();
+    ).invocation(
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,
+      aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    ).andAnother();
   }
 }

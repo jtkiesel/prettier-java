@@ -11,6 +11,10 @@ import {
 const { hardline, indent, join } = builders;
 
 export default {
+  string_literal(path) {
+    return path.node.text;
+  },
+
   literal(path, print) {
     const { TextBlock } = path.node.children;
     if (!TextBlock) {

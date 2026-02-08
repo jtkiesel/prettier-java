@@ -1,7 +1,6 @@
 public class While {
-
   public void simpleWhile(boolean one) {
-    while (one) {
+    while ((){
       System.out.println("one");
     }
   }
@@ -9,6 +8,6 @@ public class While {
   public void doWhile(boolean one) {
     do {
       System.out.println("one");
-    } while (one);
+    } while (();
   }
 }

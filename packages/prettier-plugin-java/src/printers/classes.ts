@@ -1,71 +1,63 @@
-import type {
-  ClassBodyCstNode,
-  EnumBodyDeclarationsCstNode
-} from "java-parser";
-import type { AstPath, Doc } from "prettier";
+import type { Doc } from "prettier";
 import { builders } from "prettier/doc";
+import { isComment } from "../comments.js";
+import { SyntaxType } from "../tree-sitter-java.js";
 import {
   call,
   definedKeys,
   each,
+  hasChild,
   hasDeclarationAnnotations,
   hasLeadingComments,
-  hasNonAssignmentOperators,
   indentInParentheses,
   lineEndWithComments,
   lineStartWithComments,
   map,
   onlyDefinedKey,
   printBlock,
-  printClassPermits,
+  printClassBodyDeclarations,
   printClassType,
   printDanglingComments,
-  printList,
   printSingle,
+  printVariableDeclaration,
   printWithModifiers,
-  type JavaNodePrinters,
-  type JavaNonTerminal,
-  type JavaPrintFn
+  type JavaNodePrinters
 } from "./helpers.js";
 
 const { group, hardline, indent, indentIfBreak, join, line, softline } =
   builders;
 
 export default {
-  classDeclaration(path, print) {
-    const declarationKey = onlyDefinedKey(path.node.children, [
-      "enumDeclaration",
-      "normalClassDeclaration",
-      "recordDeclaration"
-    ]);
-    const declaration = call(path, print, declarationKey);
-    return printWithModifiers(path, print, "classModifier", declaration, true);
-  },
-
-  normalClassDeclaration(path, print) {
-    const { children } = path.node;
-    const definedClauses = definedKeys(children, [
-      "classExtends",
-      "classImplements",
-      "classPermits"
+  class_declaration(path, print) {
+    const definedClauses = definedKeys(path.node, [
+      "superclassNode",
+      "interfacesNode",
+      "permitsNode"
     ]);
     const hasMultipleClauses = definedClauses.length > 1;
-    const hasTypeParameters = children.typeParameters !== undefined;
-    const parts = ["class ", call(path, print, "typeIdentifier")];
+    const hasTypeParameters = hasChild(path, "type_parametersNode");
+    const parts: Doc[] = [];
+
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      parts.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    parts.push("class ", path.call(print, "nameNode"));
     if (hasTypeParameters) {
-      const typeParameters = call(path, print, "typeParameters");
+      const typeParameters = path.call(print, "type_parametersNode");
       parts.push(
         hasMultipleClauses ? group(indent(typeParameters)) : typeParameters
       );
     }
     if (definedClauses.length) {
       const separator = hasTypeParameters && !hasMultipleClauses ? " " : line;
-      const clauses = definedClauses.flatMap(clause => [
-        separator,
-        call(path, print, clause)
-      ]);
-      const hasBody =
-        children.classBody[0].children.classBodyDeclaration !== undefined;
+      const clauses = definedClauses.flatMap(clause =>
+        hasChild(path, clause) ? [separator, path.call(print, clause)] : []
+      );
+      const hasBody = path.node.bodyNode.namedChildCount > 0;
       const clauseGroup = [
         hasTypeParameters && !hasMultipleClauses ? clauses : indent(clauses),
         hasBody ? separator : " "
@@ -74,46 +66,66 @@ export default {
     } else {
       parts.push(" ");
     }
-    return [group(parts), call(path, print, "classBody")];
+    return [group(parts), path.call(print, "bodyNode")];
   },
 
-  classModifier: printSingle,
-
-  typeParameters(path, print) {
-    return [
+  type_parameters(path, print) {
+    const typeParameters: Doc[] = [];
+    path.each(child => {
+      if (child.node.type === SyntaxType.TypeParameter) {
+        typeParameters.push(print(child));
+      }
+    }, "namedChildren");
+    return group([
       "<",
-      indent([softline, call(path, print, "typeParameterList")]),
+      indent([softline, join([",", line], typeParameters)]),
       softline,
       ">"
-    ];
-  },
-
-  typeParameterList(path, print) {
-    return printList(path, print, "typeParameter");
-  },
-
-  classExtends(path, print) {
-    return ["extends ", call(path, print, "classType")];
-  },
-
-  classImplements(path, print) {
-    return group([
-      "implements",
-      indent([line, call(path, print, "interfaceTypeList")])
     ]);
   },
 
-  classPermits: printClassPermits,
-
-  interfaceTypeList(path, print) {
-    return printList(path, print, "interfaceType");
+  superclass(path, print) {
+    const typeIndex = path.node.namedChildren.findIndex(
+      child => !isComment(child)
+    );
+    return ["extends ", path.call(print, "namedChildren", typeIndex)];
   },
 
-  classBody(path, print) {
+  super_interfaces(path, print) {
+    const typeListIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.TypeList
+    );
+    return group([
+      "implements",
+      indent([line, path.call(print, "namedChildren", typeListIndex)])
+    ]);
+  },
+
+  permits(path, print) {
+    const typeListIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.TypeList
+    );
+    return group([
+      "permits",
+      indent([line, path.call(print, "namedChildren", typeListIndex)])
+    ]);
+  },
+
+  type_list(path, print) {
+    const types: Doc[] = [];
+
+    path.each(child => {
+      if (!isComment(child.node)) {
+        types.push(print(child));
+      }
+    }, "namedChildren");
+
+    return join([",", line], types);
+  },
+
+  class_body(path, print) {
     return printBlock(path, printClassBodyDeclarations(path, print));
   },
-
-  classBodyDeclaration: printSingle,
 
   classMemberDeclaration(path, print) {
     const { children } = path.node;
@@ -122,53 +134,28 @@ export default {
       : call(path, print, onlyDefinedKey(children));
   },
 
-  fieldDeclaration(path, print) {
-    const declaration = [
-      call(path, print, "unannType"),
-      " ",
-      call(path, print, "variableDeclaratorList"),
-      ";"
-    ];
-    return printWithModifiers(path, print, "fieldModifier", declaration);
-  },
+  field_declaration: printVariableDeclaration,
 
-  fieldModifier: printSingle,
-
-  variableDeclaratorList(path, print) {
-    const declarators = map(path, print, "variableDeclarator");
-    return declarators.length > 1 &&
-      path.node.children.variableDeclarator.some(
-        ({ children }) => children.Equals
-      )
-      ? group(indent(join([",", line], declarators)), {
-          shouldBreak:
-            (path.getNode(4) as JavaNonTerminal | null)?.name !== "forInit"
-        })
-      : join(", ", declarators);
-  },
-
-  variableDeclarator(path, print) {
-    const { children } = path.node;
-    const variableInitializer = children.variableInitializer?.[0];
-    const declaratorId = call(path, print, "variableDeclaratorId");
-    if (!variableInitializer) {
-      return declaratorId;
+  variable_declarator(path, print) {
+    const declarator = [path.call(print, "nameNode")];
+    if (hasChild(path, "dimensionsNode")) {
+      declarator.push(path.call(print, "dimensionsNode"));
     }
-    const binaryExpression =
-      variableInitializer.children.expression?.[0].children
-        .conditionalExpression?.[0].children.binaryExpression[0];
-    const declarator = [declaratorId, " ", call(path, print, "Equals")];
-    const initializer = call(path, print, "variableInitializer");
+    if (!hasChild(path, "valueNode")) {
+      return declarator;
+    }
+    declarator.push(" =");
+    const value = path.call(print, "valueNode");
     if (
-      hasLeadingComments(variableInitializer) ||
-      (binaryExpression && hasNonAssignmentOperators(binaryExpression))
+      path.node.valueNode.type === SyntaxType.BinaryExpression ||
+      hasLeadingComments(path.node.valueNode)
     ) {
-      declarator.push(group(indent([line, initializer])));
+      declarator.push(group(indent([line, value])));
     } else {
       const groupId = Symbol("assignment");
       declarator.push(
         group(indent(line), { id: groupId }),
-        indentIfBreak(initializer, { groupId })
+        indentIfBreak(value, { groupId })
       );
     }
     return group(declarator);
@@ -202,6 +189,50 @@ export default {
   unannClassType: printClassType,
   unannInterfaceType: printSingle,
   unannTypeVariable: printSingle,
+
+  method_declaration(path, print) {
+    const declaration: Doc[] = [];
+
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      declaration.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    if (hasChild(path, "type_parametersNode")) {
+      declaration.push(path.call(print, "type_parametersNode"), " ");
+    }
+
+    declaration.push(path.call(print, "typeNode"));
+
+    if (hasChild(path, "dimensionsNode")) {
+      declaration.push(path.call(print, "dimensionsNode"));
+    }
+
+    declaration.push(
+      " ",
+      path.call(print, "nameNode"),
+      path.call(print, "parametersNode")
+    );
+
+    const throwsIndex = path.node.children.findIndex(
+      ({ type }) => type === SyntaxType.Throws
+    );
+    if (throwsIndex !== -1) {
+      declaration.push(
+        group(indent([line, path.call(print, "children", throwsIndex)]))
+      );
+    }
+
+    if (hasChild(path, "bodyNode")) {
+      declaration.push(" ", path.call(print, "bodyNode"));
+    } else {
+      declaration.push(";");
+    }
+
+    return declaration;
+  },
 
   methodDeclaration(path, print) {
     const declaration = [
@@ -257,50 +288,89 @@ export default {
     return declarator;
   },
 
-  receiverParameter(path, print) {
-    return join(" ", [
-      ...map(path, print, "annotation"),
-      call(path, print, "unannType"),
-      path.node.children.Identifier
-        ? [call(path, print, "Identifier"), ".this"]
-        : "this"
-    ]);
+  receiver_parameter(path, print) {
+    const parts: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        parts.push(
+          print(child),
+          child.node.type === SyntaxType.Identifier ? "." : " "
+        );
+      }
+    }, "namedChildren");
+
+    parts.push("this");
+
+    return parts;
   },
 
-  formalParameterList(path, print) {
-    return printList(path, print, "formalParameter");
+  formal_parameters(path, print) {
+    const parameters: Doc[] = [];
+    path.each(child => {
+      if (!isComment(child.node)) {
+        parameters.push(print(child));
+      }
+    }, "namedChildren");
+    return ["(", ...join([",", line], parameters), ")"];
   },
 
-  formalParameter: printSingle,
+  formal_parameter(path, print) {
+    const parameter: Doc[] = [];
 
-  variableParaRegularParameter(path, print) {
-    return join(" ", [
-      ...map(path, print, "variableModifier"),
-      call(path, print, "unannType"),
-      call(path, print, "variableDeclaratorId")
-    ]);
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      parameter.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    parameter.push(
+      path.call(print, "typeNode"),
+      " ",
+      path.call(print, "nameNode")
+    );
+
+    return parameter;
   },
 
-  variableArityParameter(path, print) {
-    const type = join(" ", [
-      ...map(path, print, "variableModifier"),
-      call(path, print, "unannType"),
-      ...map(path, print, "annotation")
-    ]);
-    return [type, "... ", call(path, print, "Identifier")];
-  },
+  spread_parameter(path, print) {
+    const parts: Doc[] = [];
 
-  variableModifier: printSingle,
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      parts.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    path.each(child => {
+      if (!isComment(child.node)) {
+        parts.push(print(child));
+      }
+    }, "namedChildren");
+
+    const variableDeclaratorIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.VariableDeclarator
+    );
+    return [
+      join(" ", parts),
+      "... ",
+      path.call(print, "namedChildren", variableDeclaratorIndex)
+    ];
+  },
 
   throws(path, print) {
-    return ["throws ", call(path, print, "exceptionTypeList")];
+    const types: Doc[] = [];
+
+    path.each(child => {
+      if (!isComment(child.node)) {
+        types.push(print(child));
+      }
+    }, "namedChildren");
+
+    return ["throws ", ...join(", ", types)];
   },
 
-  exceptionTypeList(path, print) {
-    return join(", ", map(path, print, "exceptionType"));
-  },
-
-  exceptionType: printSingle,
   methodBody: printSingle,
   instanceInitializer: printSingle,
 
@@ -308,130 +378,163 @@ export default {
     return ["static ", call(path, print, "block")];
   },
 
-  constructorDeclaration(path, print) {
-    const declaration = [call(path, print, "constructorDeclarator")];
-    if (path.node.children.throws) {
-      declaration.push(group(indent([line, call(path, print, "throws")])));
-    }
-    declaration.push(" ", call(path, print, "constructorBody"));
-    return printWithModifiers(
-      path,
-      print,
-      "constructorModifier",
-      declaration,
-      true
-    );
-  },
+  constructor_declaration(path, print) {
+    const declaration: Doc[] = [];
 
-  constructorModifier: printSingle,
-
-  constructorDeclarator(path, print) {
-    const { children } = path.node;
-    const parameters: Doc[] = [];
-    if (children.receiverParameter) {
-      parameters.push(call(path, print, "receiverParameter"));
-    }
-    if (children.formalParameterList) {
-      parameters.push(call(path, print, "formalParameterList"));
-    }
-    const header = [call(path, print, "simpleTypeName")];
-    header.push(
-      parameters.length
-        ? indentInParentheses(join([",", line], parameters))
-        : "()"
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
     );
-    return children.typeParameters
-      ? [group(call(path, print, "typeParameters")), " ", ...header]
-      : header;
+    if (modifiersIndex !== -1) {
+      declaration.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    if (hasChild(path, "type_parametersNode")) {
+      declaration.push(path.call(print, "type_parametersNode"), " ");
+    }
+
+    declaration.push(
+      path.call(print, "nameNode"),
+      path.call(print, "parametersNode")
+    );
+
+    const throwsIndex = path.node.children.findIndex(
+      ({ type }) => type === SyntaxType.Throws
+    );
+    if (throwsIndex !== -1) {
+      declaration.push(
+        group(indent([line, path.call(print, "children", throwsIndex)]))
+      );
+    }
+
+    declaration.push(" ", path.call(print, "bodyNode"));
+
+    return declaration;
   },
 
   simpleTypeName: printSingle,
 
-  constructorBody(path, print) {
-    const { children } = path.node;
+  constructor_body(path, print) {
     const statements: Doc[] = [];
-    if (children.explicitConstructorInvocation) {
-      statements.push(call(path, print, "explicitConstructorInvocation"));
-    }
-    if (children.blockStatements) {
-      statements.push(call(path, print, "blockStatements"));
-    }
+
+    path.each(child => {
+      if (!isComment(child.node)) {
+        statements.push(print(child));
+      }
+    }, "namedChildren");
+
     return printBlock(path, statements);
   },
 
-  explicitConstructorInvocation: printSingle,
-
-  unqualifiedExplicitConstructorInvocation(path, print) {
-    const { children } = path.node;
+  explicit_constructor_invocation(path, print) {
     const invocation: Doc[] = [];
-    if (children.typeArguments) {
-      invocation.push(call(path, print, "typeArguments"));
+
+    if (hasChild(path, "objectNode")) {
+      invocation.push(path.call(print, "objectNode"), ".");
     }
-    invocation.push(children.Super ? "super" : "this");
-    if (children.argumentList) {
-      invocation.push(group(["(", call(path, print, "argumentList"), ")"]));
-    } else {
-      invocation.push(
-        indentInParentheses(printDanglingComments(path), { shouldBreak: true })
-      );
+
+    if (hasChild(path, "type_argumentsNode")) {
+      invocation.push(path.call(print, "type_argumentsNode"));
     }
-    invocation.push(";");
+
+    invocation.push(
+      path.call(print, "constructorNode"),
+      path.call(print, "argumentsNode"),
+      ";"
+    );
+
     return invocation;
   },
 
-  qualifiedExplicitConstructorInvocation(path, print) {
-    const { children } = path.node;
-    const invocation = [call(path, print, "expressionName"), "."];
-    if (children.typeArguments) {
-      invocation.push(call(path, print, "typeArguments"));
+  modifiers(path, print, { noTypeAnnotations = false }) {
+    const declarationAnnotations: Doc[] = [];
+    const otherModifiers: string[] = [];
+    const typeAnnotations: Doc[] = [];
+
+    path.each(modifierPath => {
+      const { type } = modifierPath.node;
+      if (
+        type === SyntaxType.Annotation ||
+        type === SyntaxType.MarkerAnnotation
+      ) {
+        (otherModifiers.length ? typeAnnotations : declarationAnnotations).push(
+          print(modifierPath)
+        );
+      } else {
+        otherModifiers.push(type);
+        declarationAnnotations.push(...typeAnnotations);
+        typeAnnotations.length = 0;
+      }
+    }, "children");
+
+    if (noTypeAnnotations) {
+      declarationAnnotations.push(...typeAnnotations);
+      typeAnnotations.length = 0;
     }
-    invocation.push("super");
-    if (children.argumentList) {
-      invocation.push(group(["(", call(path, print, "argumentList"), ")"]));
-    } else {
-      invocation.push(
-        indentInParentheses(printDanglingComments(path), { shouldBreak: true })
-      );
+
+    otherModifiers.sort(
+      (a, b) => (indexByModifier.get(a) ?? -1) - (indexByModifier.get(b) ?? -1)
+    );
+
+    const typeModifiers = join(" ", [...otherModifiers, ...typeAnnotations]);
+    if (typeModifiers.length) {
+      typeModifiers.push(" ");
     }
-    invocation.push(";");
-    return invocation;
+
+    return join(hardline, [...declarationAnnotations, typeModifiers]);
   },
 
-  enumDeclaration(path, print) {
-    const { children } = path.node;
-    const parts = ["enum ", call(path, print, "typeIdentifier")];
-    if (children.classImplements) {
-      const body = children.enumBody[0].children;
-      const hasBody =
-        body.enumBodyDeclarations !== undefined ||
-        body.enumConstantList !== undefined;
+  enum_declaration(path, print) {
+    const parts: Doc[] = [];
+
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      parts.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    parts.push("enum ", path.call(print, "nameNode"));
+    if (hasChild(path, "interfacesNode")) {
+      const hasBody = path.node.bodyNode.childCount > 0;
       parts.push(
-        indent([line, call(path, print, "classImplements")]),
+        indent([line, path.call(print, "interfacesNode")]),
         hasBody ? line : " "
       );
     } else {
       parts.push(" ");
     }
-    return [group(parts), call(path, print, "enumBody")];
+    return [group(parts), path.call(print, "bodyNode")];
   },
 
-  enumBody(path, print, options) {
-    const { children } = path.node;
+  enum_body(path, print, options) {
+    const enumConstants: Doc[] = [];
+    path.each(child => {
+      if (child.node.type === SyntaxType.EnumConstant) {
+        enumConstants.push(print(child));
+      }
+    }, "children");
+
+    const enumBodyDeclarationsIndex = path.node.children.findIndex(
+      ({ type }) => type === SyntaxType.EnumBodyDeclarations
+    );
+    const hasDeclarations =
+      enumBodyDeclarationsIndex !== -1 &&
+      path.node.children[enumBodyDeclarationsIndex].namedChildCount > 0;
+
     const contents: Doc[] = [];
-    const hasNonEmptyDeclaration = (children.enumBodyDeclarations ?? [])
-      .flatMap(({ children }) => children.classBodyDeclaration ?? [])
-      .some(
-        ({ children }) =>
-          !children.classMemberDeclaration?.[0].children.Semicolon
-      );
-    if (children.enumConstantList) {
-      contents.push(call(path, print, "enumConstantList"));
-      if (!hasNonEmptyDeclaration && options.trailingComma !== "none") {
+    if (enumConstants.length) {
+      contents.push(join([",", hardline], enumConstants));
+      if (!hasDeclarations && options.trailingComma !== "none") {
         contents.push(",");
       }
     }
-    if (hasNonEmptyDeclaration) {
-      contents.push(";", hardline, call(path, print, "enumBodyDeclarations"));
+    if (hasDeclarations) {
+      contents.push(
+        ";",
+        hardline,
+        hardline,
+        path.call(print, "children", enumBodyDeclarationsIndex)
+      );
     }
     return printBlock(path, contents.length ? [contents] : []);
   },
@@ -454,98 +557,64 @@ export default {
     );
   },
 
-  enumConstant(path, print) {
-    const { argumentList, classBody } = path.node.children;
-    const initializer = [call(path, print, "Identifier")];
-    if (argumentList) {
-      initializer.push(group(["(", call(path, print, "argumentList"), ")"]));
+  enum_constant(path, print) {
+    const initializer: Doc[] = [];
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      initializer.push(path.call(print, "namedChildren", modifiersIndex));
     }
-    if (classBody) {
-      initializer.push(" ", call(path, print, "classBody"));
+    initializer.push(path.call(print, "nameNode"));
+    if (hasChild(path, "argumentsNode")) {
+      initializer.push(path.call(print, "argumentsNode"));
     }
-    return printWithModifiers(path, print, "enumConstantModifier", initializer);
+    if (hasChild(path, "bodyNode")) {
+      initializer.push(" ", path.call(print, "bodyNode"));
+    }
+    return initializer;
   },
 
-  enumConstantModifier: printSingle,
-
-  enumBodyDeclarations(path, print) {
+  enum_body_declarations(path, print) {
     return join(hardline, printClassBodyDeclarations(path, print));
   },
 
-  recordDeclaration(path, print) {
-    const { children } = path.node;
-    const parts = ["record ", call(path, print, "typeIdentifier")];
-    if (children.typeParameters) {
-      parts.push(group(call(path, print, "typeParameters")));
+  record_declaration(path, print) {
+    const parts: Doc[] = [];
+
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
+    );
+    if (modifiersIndex !== -1) {
+      parts.push(path.call(print, "namedChildren", modifiersIndex));
     }
-    parts.push(call(path, print, "recordHeader"));
-    if (children.classImplements) {
-      const hasComponents =
-        children.recordHeader[0].children.recordComponentList !== undefined;
-      const hasBody =
-        children.recordBody[0].children.recordBodyDeclaration !== undefined;
-      const classImplements = [
-        hasComponents ? " " : line,
-        call(path, print, "classImplements")
+
+    parts.push("record ", path.call(print, "nameNode"));
+
+    if (hasChild(path, "type_parametersNode")) {
+      parts.push(group(path.call(print, "type_parametersNode")));
+    }
+
+    parts.push(path.call(print, "parametersNode"));
+
+    if (hasChild(path, "interfacesNode")) {
+      const hasParameters = path.node.parametersNode.namedChildCount > 0;
+      const hasBody = path.node.bodyNode.namedChildCount > 0;
+      const interfaces = [
+        hasParameters ? " " : line,
+        path.call(print, "interfacesNode")
       ];
       parts.push(
         group([
-          hasComponents ? classImplements : indent(classImplements),
+          hasParameters ? interfaces : indent(interfaces),
           hasBody ? line : " "
         ])
       );
     } else {
       parts.push(" ");
     }
-    return [group(parts), call(path, print, "recordBody")];
-  },
 
-  recordHeader(path, print) {
-    return path.node.children.recordComponentList
-      ? [
-          "(",
-          indent([softline, call(path, print, "recordComponentList")]),
-          softline,
-          ")"
-        ]
-      : indentInParentheses(printDanglingComments(path), { shouldBreak: true });
-  },
-
-  recordComponentList(path, print) {
-    return join(
-      [",", line],
-      map(
-        path,
-        componentPath => {
-          const { node, previous } = componentPath;
-          const blankLine =
-            previous &&
-            lineStartWithComments(node) > lineEndWithComments(previous) + 1;
-          const component = print(componentPath);
-          return blankLine ? [softline, component] : component;
-        },
-        "recordComponent"
-      )
-    );
-  },
-
-  recordComponent(path, print) {
-    const { children } = path.node;
-    const component = [call(path, print, "unannType")];
-    if (
-      children.Identifier ||
-      children.variableArityRecordComponent![0].children.annotation
-    ) {
-      component.push(" ");
-    }
-    const suffixKey = onlyDefinedKey(children, [
-      "Identifier",
-      "variableArityRecordComponent"
-    ]);
-    component.push(call(path, print, suffixKey));
-    return group(
-      join(line, [...map(path, print, "recordComponentModifier"), component])
-    );
+    return [group(parts), path.call(print, "bodyNode")];
   },
 
   variableArityRecordComponent(path, print) {
@@ -591,57 +660,35 @@ export default {
 
   recordBodyDeclaration: printSingle,
 
-  compactConstructorDeclaration(path, print) {
-    const declaration = [
-      call(path, print, "simpleTypeName"),
-      " ",
-      call(path, print, "constructorBody")
-    ];
-    return printWithModifiers(
-      path,
-      print,
-      "constructorModifier",
-      declaration,
-      true
+  compact_constructor_declaration(path, print) {
+    const parts: Doc[] = [];
+
+    const modifiersIndex = path.node.namedChildren.findIndex(
+      ({ type }) => type === SyntaxType.Modifiers
     );
+    if (modifiersIndex !== -1) {
+      parts.push(path.call(print, "namedChildren", modifiersIndex));
+    }
+
+    parts.push(path.call(print, "nameNode"), " ", path.call(print, "bodyNode"));
+
+    return parts;
   }
 } satisfies Partial<JavaNodePrinters>;
 
-function printClassBodyDeclarations(
-  path: AstPath<ClassBodyCstNode | EnumBodyDeclarationsCstNode>,
-  print: JavaPrintFn
-) {
-  if (!path.node.children.classBodyDeclaration) {
-    return [];
-  }
-  const declarations: Doc[] = [];
-  let previousRequiresPadding =
-    path.node.name === "enumBodyDeclarations" ||
-    (path.grandparent as JavaNonTerminal | null)?.name ===
-      "normalClassDeclaration";
-  each(
-    path,
-    declarationPath => {
-      const declaration = print(declarationPath);
-      if (declaration === "") {
-        return;
-      }
-      const { node, previous } = declarationPath;
-      const fieldDeclaration =
-        node.children.classMemberDeclaration?.[0].children.fieldDeclaration?.[0]
-          .children;
-      const currentRequiresPadding = fieldDeclaration
-        ? hasDeclarationAnnotations(fieldDeclaration.fieldModifier ?? [])
-        : true;
-      const blankLine =
-        previousRequiresPadding ||
-        (declarations.length > 0 &&
-          (currentRequiresPadding ||
-            lineStartWithComments(node) > lineEndWithComments(previous!) + 1));
-      declarations.push(blankLine ? [hardline, declaration] : declaration);
-      previousRequiresPadding = currentRequiresPadding;
-    },
-    "classBodyDeclaration"
-  );
-  return declarations;
-}
+const indexByModifier = [
+  "public",
+  "protected",
+  "private",
+  "abstract",
+  "default",
+  "static",
+  "final",
+  "transient",
+  "volatile",
+  "synchronized",
+  "native",
+  "sealed",
+  "non-sealed",
+  "strictfp"
+].reduce((map, name, index) => map.set(name, index), new Map<string, number>());
