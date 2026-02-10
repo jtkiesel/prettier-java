@@ -1,9 +1,12 @@
-import type { SyntaxType } from "../tree-sitter-java.js";
 import arrays from "./arrays.js";
 import blocksAndStatements from "./blocks-and-statements.js";
 import classes from "./classes.js";
 import expressions from "./expressions.js";
-import type { JavaNodePrinter, JavaNodePrinters } from "./helpers.js";
+import type {
+  JavaNodePrinter,
+  JavaNodePrinters,
+  JavaRuleName
+} from "./helpers.js";
 import interfaces from "./interfaces.js";
 import lexicalStructure from "./lexical-structure.js";
 import names from "./names.js";
@@ -15,26 +18,8 @@ const printersByNodeType: JavaNodePrinters = {
     console.log(`Failed to parse: "${path.node.text}"`);
     return path.node.text;
   },
-  this(path) {
-    return path.node.text;
-  },
-  type_identifier(path) {
-    return path.node.text;
-  },
-  decimal_integer_literal(path) {
-    return path.node.text;
-  },
-  decimal_floating_point_literal(path) {
-    return path.node.text;
-  },
-  null_literal(path) {
-    return path.node.text;
-  },
-  super(path) {
-    return path.node.text;
-  },
-  character_literal(path) {
-    return path.node.text;
+  CharacterLiteral(path) {
+    return path.node.value;
   },
   underscore_pattern(path) {
     return path.node.text;
@@ -62,9 +47,7 @@ const printersByNodeType: JavaNodePrinters = {
   ...typesValuesAndVariables
 };
 
-export function printerForNodeType<T extends SyntaxType>(
-  type: T
-): JavaNodePrinter<T> {
+export function printerForNodeType(type: JavaRuleName): JavaNodePrinter {
   const printer = printersByNodeType[type];
   if (!printer) {
     throw new Error("No printer found for node type: " + type);

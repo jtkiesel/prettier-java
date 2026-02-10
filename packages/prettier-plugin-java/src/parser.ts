@@ -1,17 +1,15 @@
-import type Prettier from "prettier";
-import Parser from "tree-sitter";
-import Java from "tree-sitter-java";
-import { JavaComment } from "./comments.js";
-import { JavaNode } from "./printers/helpers.js";
-import { SyntaxType } from "./tree-sitter-java.js";
+import { ParserRuleContext, TerminalNode } from "antlr4ng";
+import { parse } from "java-parser";
+import type { Parser } from "prettier";
+import type { JavaNode } from "./printers/helpers.js";
 
 export default {
   parse(text) {
-    const start = performance.now();
-    const parser = new Parser();
+    return parse(text) as JavaNode;
+
+    /*const parser = new Parser();
     parser.setLanguage(Java);
     const tree = parser.parse(text).rootNode as JavaNode;
-    console.log("parse time: " + (performance.now() - start) + "ms");
     const comments = tree.descendantsOfType([
       SyntaxType.BlockComment,
       SyntaxType.LineComment
@@ -34,11 +32,21 @@ export default {
     return /^\/\*\*\n\s+\*\s@(format|prettier)\n\s+\*\//.test(text);
   },
   locStart(node) {
-    //node.children.find(child => !isComment(child))?.startIndex ??
-    return node.startIndex;
+    if (node instanceof ParserRuleContext) {
+      return node.start?.tokenIndex ?? -1;
+    } else if (node instanceof TerminalNode) {
+      return node.symbol.start;
+    } else {
+      throw new Error(`Unexpected ParseTree implementation: ${typeof node}`);
+    }
   },
   locEnd(node) {
-    //node.children.findLast(child => !isComment(child))?.endIndex ??
-    return node.endIndex;
+    if (node instanceof ParserRuleContext) {
+      return node.stop?.tokenIndex ?? -1;
+    } else if (node instanceof TerminalNode) {
+      return node.symbol.stop;
+    } else {
+      throw new Error(`Unexpected ParseTree implementation: ${typeof node}`);
+    }
   }
-} satisfies Prettier.Parser<JavaNode>;
+} satisfies Parser<JavaNode>;

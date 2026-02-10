@@ -1,5 +1,6 @@
 public enum Enum {
 
+// hi
   SOME_ENUM, ANOTHER_ENUM, LAST_ENUM;
 
 }

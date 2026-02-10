@@ -28,13 +28,7 @@ public class Constructors {
   }
 
   Constructors() {
-    super(
-      "lots",
-      "of",
-      "parameters",
-      "when there is not enough space",
-      "should wrap well"
-    );
+    super("lots", "of", "parameters", "when there is not enough space", "should wrap well");
     System.out.println("constructor with super that wraps");
   }
 
@@ -44,13 +38,7 @@ public class Constructors {
   }
 
   Constructors() {
-    this(
-      "lots",
-      "of",
-      "parameters",
-      "when there is not enough space",
-      "should wrap well"
-    );
+    this("lots", "of", "parameters", "when there is not enough space", "should wrap well");
     System.out.println("constructor with this that wraps");
   }
 
@@ -60,6 +48,5 @@ public class Constructors {
   }
 
   public <T> GenericConstructor(T genericParameter) {}
-
-  public <T> GenericConstructor(T genericParameter) {}
+  public <T>GenericConstructor(T genericParameter) {}
 }

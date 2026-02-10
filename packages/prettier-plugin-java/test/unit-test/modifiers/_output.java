@@ -1,69 +1,49 @@
-@AnnotationOne
-@AnnotationTwo
-public static @AnnotationThree interface InterfaceWithModifiers {
   @AnnotationOne
-  public static final String INTERFACE_CONSTANT = "abc";
 
-  @AnnotationOne
-  @AnnotationTwo
-  public default @AnnotationThree String defaultMethod() {
+@AnnotationTwo static public @AnnotationThree interface InterfaceWithModifiers {
+  static final @AnnotationOne public String INTERFACE_CONSTANT = "abc";
+
+    @AnnotationOne
+  @AnnotationTwo default public @AnnotationThree String defaultMethod() {
     return INTERFACE_CONSTANT;
   }
 
-  @AnnotationOne
-  public static @AnnotationTwo String staticMethod() {
+  static @AnnotationOne public @AnnotationTwo String staticMethod() {
     return INTERFACE_CONSTANT;
   }
 
   public @AnnotationOne @AnnotationTwo void twoTrailingAnnotations();
 
-  @AnnotationOne
-  void onlyAnnotations();
+  @AnnotationOne void onlyAnnotations();
 }
 
-@AnnotationOne
-public abstract @AnnotationTwo class AbstractClassWithModifiers
-{
-  @Annotation
-  private static volatile String field;
+@AnnotationOne abstract public @AnnotationTwo class AbstractClassWithModifiers {
+  volatile private @Annotation static String field;
 
   @AnnotationOne
-  @AnnotationTwo
-  protected abstract synchronized @AnnotationThree String method();
+  @AnnotationTwo abstract synchronized protected @AnnotationThree String method();
 
   public @AnnotationOne @AnnotationTwo void twoTrailingAnnotations() {}
 
-  @AnnotationOne
-  void onlyAnnotations() {}
+  @AnnotationOne void onlyAnnotations() {}
 }
 
-@AnnotationOne
-public static final @AnnotationTwo class ClassWithModifiers
-{
-  @AnnotationOne
-  @AnnotationTwo
-  private static final transient String CONSTANT = "abc";
+final @AnnotationOne static public @AnnotationTwo class ClassWithModifiers {
+  transient @AnnotationOne final private @AnnotationTwo static String CONSTANT = "abc";
 
-  @AnnotationOne
-  @AnnotationTwo
-  protected static final @AnnotationThree String CONSTANT_2 = "123";
+  final @AnnotationOne static @AnnotationTwo protected @AnnotationThree String CONSTANT_2 = "123";
 
-  @AnnotationOne
-  public static @AnnotationTwo String staticField;
+  static @AnnotationOne public @AnnotationTwo String staticField;
 
   public @AnnotationOne @AnnotationTwo String twoTrailingAnnotations;
 
-  @AnnotationOne
-  String onlyAnnotations;
+  @AnnotationOne String onlyAnnotations;
 
-  @AnnotationOne
-  @AnnotationTwo
-  protected static final synchronized @AnnotationThree String method() {
+  final @AnnotationOne static @AnnotationTwo synchronized protected @AnnotationThree String method() {
     return CONSTANT;
   }
 
   public @AnnotationOne @AnnotationTwo void twoTrailingAnnotations() {}
 
-  @AnnotationOne
-  void onlyAnnotations() {}
+  @AnnotationOne void onlyAnnotations() {}
 }

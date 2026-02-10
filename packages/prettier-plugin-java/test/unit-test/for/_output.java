@@ -37,8 +37,7 @@ public class For {
   }
 
   void nested() {
-    for (SomeClass<?> elem : elements)
-      for (SomeClass<?> elem : elements)
-        for (SomeClass<?> elem : elements) doSomeThing();
+    for(SomeClass<?> elem : elements) for(SomeClass<?> elem : elements) for(SomeClass<?> elem : elements)
+      doSomeThing();
   }
 }

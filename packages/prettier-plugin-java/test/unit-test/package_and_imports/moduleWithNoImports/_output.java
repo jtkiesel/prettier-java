@@ -1,2 +1,3 @@
-module my.module {
-}
+
+
+module my.module {}

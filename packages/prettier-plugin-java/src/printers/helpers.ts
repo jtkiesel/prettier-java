@@ -1,3 +1,4 @@
+import type { ParserRuleContext, ParseTree } from "antlr4ng";
 import type {
   AnnotationCstNode,
   BinaryExpressionCstNode,
@@ -12,21 +13,9 @@ import type {
 } from "java-parser";
 import type { AstPath, Doc, ParserOptions } from "prettier";
 import { builders } from "prettier/doc";
-import { isComment, JavaComment } from "../comments.js";
+import { JavaParser } from "../../../java-parser/dist/JavaParser.js";
+import { isComment } from "../comments.js";
 import parser from "../parser.js";
-import {
-  ArrayInitializerNode,
-  ClassBodyNode,
-  ConstantDeclarationNode,
-  ElementValueArrayInitializerNode,
-  EnumBodyDeclarationsNode,
-  FieldDeclarationNode,
-  InterfaceBodyNode,
-  LocalVariableDeclarationNode,
-  type NamedNode,
-  type SyntaxNode,
-  SyntaxType
-} from "../tree-sitter-java.js";
 
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
 
@@ -523,14 +512,13 @@ export function isTerminal(node: CstElement): node is IToken {
   return "tokenType" in node;
 }
 
-export type JavaNode<T extends SyntaxNode = SyntaxNode> = T & {
-  comments?: JavaComment[];
-};
+export type JavaNode = ParseTree;
+export type JavaRuleName = (typeof JavaParser.ruleNames)[number];
 export type JavaNodePrinters = {
-  [T in SyntaxType]: JavaNodePrinter<T>;
+  [T in JavaRuleName]: JavaNodePrinter<ReturnType<JavaParser[T]>>;
 };
-export type JavaNodePrinter<T extends SyntaxType> = (
-  path: AstPath<JavaNode<NamedNode<T>>>,
+export type JavaNodePrinter<T extends ParserRuleContext> = (
+  path: AstPath<T>,
   print: (path: AstPath<JavaNode>, args?: unknown) => Doc,
   options: ParserOptions<JavaNode>,
   args?: unknown

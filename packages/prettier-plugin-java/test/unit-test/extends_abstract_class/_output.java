@@ -1,4 +1,5 @@
 public class ExtendsAbstractClass extends AbstractClass {
+
   @Override
   public void abstractMethod() {
     System.out.println("implemented abstract method");
@@ -8,4 +9,5 @@ public class ExtendsAbstractClass extends AbstractClass {
   public int hashCode() {
     return super.hashCode();
   }
+
 }

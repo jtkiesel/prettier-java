@@ -1,4 +1,5 @@
 public class MethodReference {
+
   public void referenceToAStaticMethod() {
     call(ContainingClass::staticMethodName);
   }
@@ -14,4 +15,5 @@ public class MethodReference {
   public referenceToAnInstanceMethodOfAParticularObject() {
     call(containingObject::instanceMethodName);
   }
+
 }

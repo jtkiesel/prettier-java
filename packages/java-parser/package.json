@@ -4,22 +4,19 @@
   "description": "Java Parser in JavaScript",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./api.d.ts",
-      "default": "./src/index.js"
-    }
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
   },
   "repository": "https://github.com/jhipster/prettier-java/tree/main/packages/java-parser",
   "license": "Apache-2.0",
-  "types": "./api.d.ts",
   "dependencies": {
-    "chevrotain": "11.0.3",
-    "chevrotain-allstar": "0.3.1",
-    "lodash": "4.17.21"
+    "antlr4ng": "^3.0.16"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.2",
+    "typescript": "^5.9.3"
   },
   "scripts": {
-    "test": "yarn run clone-samples && yarn run test:execute",
-    "test:execute": "mocha \"test/**/*-spec.js\"",
-    "clone-samples": "node ./scripts/clone-samples"
+    "build": "tsc"
   }
 }

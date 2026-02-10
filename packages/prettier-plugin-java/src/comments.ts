@@ -1,11 +1,7 @@
 import { util, type AstPath } from "prettier";
 import parser from "./parser.js";
-import type { JavaNode, JavaParserOptions } from "./printers/helpers.js";
-import {
-  SyntaxType,
-  type BlockCommentNode,
-  type LineCommentNode
-} from "./tree-sitter-java.js";
+import { JavaNode, JavaParserOptions } from "./printers/helpers.js";
+import { SyntaxType } from "./tree-sitter-java.js";
 
 const prettierIgnoreRangesByTree = new WeakMap<
   JavaNode,
@@ -300,14 +296,13 @@ function isBinaryOperator(node?: JavaNode) {
   );
 }
 
-export type JavaComment = (BlockCommentNode | LineCommentNode) & {
-  value: string;
-  leading: boolean;
-  trailing: boolean;
-  printed: boolean;
-  enclosingNode?: JavaNode;
-  precedingNode?: JavaNode;
-  followingNode?: JavaNode;
+export type JavaComment = JavaNode & {
+  readonly leading: boolean;
+  readonly trailing: boolean;
+  readonly printed: boolean;
+  readonly enclosingNode?: JavaNode;
+  readonly precedingNode?: JavaNode;
+  readonly followingNode?: JavaNode;
 };
 
 type PrettierIgnoreRange = {

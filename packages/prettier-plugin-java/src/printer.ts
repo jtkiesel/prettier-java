@@ -1,4 +1,6 @@
-import type { AstPath, Printer } from "prettier";
+import { ParserRuleContext, TerminalNode } from "antlr4ng";
+import type { Printer } from "prettier";
+import { JavaParser } from "../../java-parser/dist/JavaParser.js";
 import {
   canAttachComment,
   handleLineComment,
@@ -7,13 +9,23 @@ import {
 } from "./comments.js";
 import { printComment, type JavaNode } from "./printers/helpers.js";
 import { printerForNodeType } from "./printers/index.js";
-import { SyntaxType, type NamedNode } from "./tree-sitter-java.js";
 
 export default {
   print(path, options, print, args) {
-    return hasNamedNode(path)
-      ? printerForNodeType(path.node.type)(path, print, options, args)
-      : path.node.text;
+    if (path.node instanceof ParserRuleContext) {
+      return printerForNodeType(JavaParser.ruleNames[path.node.ruleIndex])(
+        path,
+        print,
+        options,
+        args
+      );
+    } else if (path.node instanceof TerminalNode) {
+      return path.node.symbol.text ?? "";
+    } else {
+      throw new Error(
+        `Unexpected ParseTree implementation: ${typeof path.node}`
+      );
+    }
   },
   hasPrettierIgnore(path) {
     return (
@@ -39,9 +51,3 @@ export default {
     remaining: handleRemainingComment
   }
 } satisfies Printer<JavaNode>;
-
-function hasNamedNode(
-  path: AstPath<JavaNode>
-): path is AstPath<JavaNode<NamedNode>> {
-  return path.node.isNamed;
-}

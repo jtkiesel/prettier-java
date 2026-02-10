@@ -1,7 +1,7 @@
 class Synchronized {
-  void doSomething() {
-    synchronized (() {
-      doSynchronized();
+    void doSomething() {
+        synchronized (this.var) {
+            doSynchronized();
+        }
     }
-  }
 }
