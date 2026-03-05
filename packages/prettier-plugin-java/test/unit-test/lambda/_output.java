@@ -250,16 +250,15 @@ public class Lambda {
       ) -> eeeeeeeeeeeeeeeeeeeeeeee.ffffffffffffffffffffffff()
     );
 
-    a.b(
-      c ->
-        d ->
-          eeeeeeeeee.ffffffffff(
-            gggggggggg,
-            hhhhhhhhhh,
-            iiiiiiiiii,
-            jjjjjjjjjj,
-            kkkkkkkkkk
-          )
+    a.b(c ->
+      d ->
+        eeeeeeeeee.ffffffffff(
+          gggggggggg,
+          hhhhhhhhhh,
+          iiiiiiiiii,
+          jjjjjjjjjj,
+          kkkkkkkkkk
+        )
     );
 
     a.b(c ->
@@ -278,7 +277,7 @@ public class Lambda {
           jjjjjjjjjj,
           kkkkkkkkkk
         ) >
-        0
+          0
     );
 
     a.b(
@@ -292,7 +291,7 @@ public class Lambda {
           jjjjjjjjjj,
           kkkkkkkkkk
         ) >
-        0
+          0
     );
 
     a.b(
@@ -303,8 +302,7 @@ public class Lambda {
           iiiiiiiiii,
           jjjjjjjjjj,
           kkkkkkkkkk
-        ) >
-        0
+        ) > 0
     );
 
     a.b(
@@ -316,8 +314,7 @@ public class Lambda {
           iiiiiiiiii,
           jjjjjjjjjj,
           kkkkkkkkkk
-        ) >
-        0
+        ) > 0
     );
 
     a.b(
@@ -482,7 +479,7 @@ public class Lambda {
           jjjjjjjjjj,
           kkkkkkkkkk
         ) >
-        0
+          0
     );
 
     a.b(
@@ -498,8 +495,7 @@ public class Lambda {
           iiiiiiiiii,
           jjjjjjjjjj,
           kkkkkkkkkk
-        ) >
-        0
+        ) > 0
     );
 
     a.b(
