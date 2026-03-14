@@ -8,11 +8,14 @@ import {
   willPrintOwnComments
 } from "./comments.js";
 import {
+  embedTextBlock,
+  hasType,
   printComment,
   printValue,
   type JavaComment,
   type JavaNode,
-  type JavaNodePath
+  type JavaNodePath,
+  type JavaNodeType
 } from "./printers/helpers.js";
 import { printerForNodeType } from "./printers/index.js";
 import { SyntaxType } from "./tree-sitter-java.js";
@@ -22,6 +25,11 @@ export default {
     return hasJavaNode(path)
       ? printerForNodeType(path.node.type)(path, print, options, args)
       : printValue(path);
+  },
+  embed(path: JavaNodePath<JavaNodeType>) {
+    return hasType(path, SyntaxType.StringLiteral)
+      ? embedTextBlock(path)
+      : null;
   },
   hasPrettierIgnore(path) {
     return (
@@ -44,6 +52,9 @@ export default {
     ownLine: handleLineComment,
     endOfLine: handleLineComment,
     remaining: handleRemainingComment
+  },
+  getVisitorKeys() {
+    return ["namedChildren"];
   }
 } satisfies Printer<JavaNode>;
 
