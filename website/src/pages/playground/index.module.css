@@ -1,13 +1,19 @@
 .playground {
   display: flex;
+  flex: 1;
+  min-width: 0;
+  height: calc(100svh - var(--ifm-navbar-height));
 }
 
 .options {
-  min-width: 200px;
+  width: 224px;
 }
 
 .editors {
   display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 @media (max-width: 996px) {
@@ -16,9 +22,15 @@
   }
 }
 
+main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 details {
+  border-bottom: 1px solid light-dark(#ddd, #606770);
   padding: 15px 10px 10px;
-  border-bottom: 1px solid #ddd;
 }
 
 label {

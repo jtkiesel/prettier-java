@@ -19,6 +19,6 @@
 }
 
 .sectionCol {
-  width: fit-content;
   flex: initial;
+  width: fit-content;
 }

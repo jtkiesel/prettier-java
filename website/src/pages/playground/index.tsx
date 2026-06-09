@@ -1,3 +1,4 @@
+import BrowserOnly from "@docusaurus/BrowserOnly";
 import { useHistory, useLocation } from "@docusaurus/router";
 import CodeEditor from "@site/src/components/CodeEditor";
 import Layout from "@theme/Layout";
@@ -124,7 +125,7 @@ function Inner() {
         requirePragma
       })
       .then(setFormattedCode)
-      .catch(error => setFormattedCode(error.message));
+      .catch((error: Error) => setFormattedCode(error.message));
   }, [
     printWidth,
     tabWidth,
@@ -225,10 +226,24 @@ function Inner() {
         </details>
       </div>
       <div className={styles.editors}>
-        <CodeEditor rulers={[printWidth]} value={code} onChange={setCode} />
-        {isFirstRun.current ? null : (
-          <CodeEditor readOnly rulers={[printWidth]} value={formattedCode} />
-        )}
+        <BrowserOnly>
+          {() => (
+            <>
+              <CodeEditor
+                name="Input"
+                ruler={printWidth}
+                value={code}
+                onChange={code => setCode(code)}
+              />
+              <CodeEditor
+                name="Output"
+                readOnly
+                ruler={printWidth}
+                value={formattedCode}
+              />
+            </>
+          )}
+        </BrowserOnly>
       </div>
     </div>
   );
