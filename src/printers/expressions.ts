@@ -1138,12 +1138,14 @@ function printMemberChain(
   const flatGroups = groups.flat();
 
   const nodeHasComment =
-    flatGroups.some(node =>
-      node.node.comments?.some(({ leading }) => leading)
-    ) ||
+    flatGroups
+      .slice(1, -1)
+      .some(node => node.node.comments?.some(({ leading }) => leading)) ||
     flatGroups
       .slice(0, -1)
-      .some(node => node.node.comments?.some(({ trailing }) => trailing));
+      .some(node => node.node.comments?.some(({ trailing }) => trailing)) ||
+    (groups[cutoff] &&
+      groups[cutoff][0].node.comments?.some(({ leading }) => leading));
 
   // If we only have a single `.`, we shouldn't do anything fancy and just
   // render everything concatenated together.

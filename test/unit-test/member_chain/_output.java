@@ -58,9 +58,8 @@ public class BreakLongFunctionCall {
 
     java.averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.Object.something().more();
 
-    Object.something()
-      // comment
-      .more();
+    Object.something()// comment
+    .more();
 
     averyveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryverylong.java
       // comment
@@ -251,12 +250,32 @@ public class BreakLongFunctionCall {
     );
   }
 
+  void lambdaComment() {
+    () ->
+      // comment
+      a.b;
+
+    () ->
+      a// comment
+      .b;
+
+    () ->
+      // comment
+      a.b();
+
+    () ->
+      a// comment
+      .b();
+  }
+
   void prettierIgnore() {
     a ->
       // prettier-ignore
       b
-        .c().d()
-        .e().f();
+        .c()
+        .d()
+        .e()
+        .f();
   }
 
   void complexArguments() {

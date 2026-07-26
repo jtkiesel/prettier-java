@@ -198,6 +198,26 @@ public class BreakLongFunctionCall {
     );
   }
 
+  void lambdaComment() {
+    () ->
+      // comment
+      a.b;
+
+    () ->
+      a
+        // comment
+        .b;
+
+    () ->
+      // comment
+      a.b();
+
+    () ->
+      a
+        // comment
+        .b();
+  }
+
   void prettierIgnore() {
     a ->
       // prettier-ignore

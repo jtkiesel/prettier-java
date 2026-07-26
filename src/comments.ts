@@ -239,7 +239,15 @@ function handleLambdaExpressionComments(commentNode: CommentNode) {
         util.addDanglingComment(followingNode, commentNode, undefined);
       }
     } else {
-      util.addLeadingComment(followingNode, commentNode);
+      let memberChainRoot = followingNode;
+      while (isMember(memberChainRoot)) {
+        const object = getMemberObject(memberChainRoot);
+        if (!object) {
+          break;
+        }
+        memberChainRoot = object;
+      }
+      util.addLeadingComment(memberChainRoot, commentNode);
     }
     return true;
   }
@@ -254,7 +262,11 @@ function handleMemberChainComments(commentNode: CommentNode) {
         precedingNode.end.row < commentNode.start.row)) &&
     precedingNode === enclosingNode.objectNode
   ) {
-    util.addLeadingComment(enclosingNode, commentNode);
+    let fieldAccessChainRoot: SyntaxNode = enclosingNode;
+    while (fieldAccessChainRoot.type === SyntaxType.FieldAccess) {
+      fieldAccessChainRoot = fieldAccessChainRoot.objectNode;
+    }
+    util.addLeadingComment(fieldAccessChainRoot, commentNode);
     return true;
   } else if (
     isMember(followingNode) &&
@@ -490,7 +502,8 @@ function printTrailingComments(path: NamedNodePath) {
   }
   const docs: Doc[] = [];
   let printedTrailingComment:
-    ReturnType<typeof printTrailingComment> | undefined;
+    | ReturnType<typeof printTrailingComment>
+    | undefined;
 
   path.each(path => {
     const { node: comment } = path;
